@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- Shoreline redrawn after a real photograph, from Koshigoe on the Kamakura side: Enoshima's true profile (a sheer cliff, a flat wooded top with the Sea Candle, a long slope toward the causeway), Fuji just beyond it, the line of lights along the causeway, the Koshigoe shore with apartment blocks and the green harbor light, concrete breakwaters in the foreground, two surfers by day, and a calmer, silvery sea.
+- Island and shore lights come on as the sun goes down, fully by 6° below the horizon.
+
 ## 0.3.0
 
 - Shoreline drawn at twice the resolution (about 480 pixels across) and recomposed from the beach at Tsujido: Enoshima close on the left with a wooded skyline, the Sea Candle lighthouse and town lights that reflect on the water at dusk and night; a breaking wave with clumped foam and lacy whitewash; wet sand that mirrors the sky; long cloud streaks lit from below at sunrise and sunset; a distant sail by day.

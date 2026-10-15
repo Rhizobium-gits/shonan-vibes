@@ -1,7 +1,7 @@
 // Shoreline: a pixel-art Shonan coast that follows the editor's light.
-// Seen from the beach at Tsujido, facing the sea: Enoshima close on the left,
-// the sun and moon rising on the left and setting on the right over Izu,
-// Hakone and Fuji.
+// Seen from Koshigoe on the Kamakura side, after a photograph by the author:
+// Enoshima and Fuji across the water, the Koshigoe shore on the right,
+// concrete breakwaters in front.
 // Plain script, no dependencies. Renders on demand; the optional shimmer is a
 // one-frame-per-second redraw that stops whenever the view is hidden.
 (function () {
@@ -118,10 +118,12 @@
     return { horizonY, surfY, wetY, dryY, k, u };
   }
 
-  // Facing the sea from Tsujido: east (sunrise) left, west (sunset, Izu,
-  // Hakone, Fuji) right, Enoshima close on the left.
+  // Facing Enoshima from Koshigoe: the open sea (south) on the left, where
+  // the sun crosses by day; sunsets behind Enoshima, Fuji and Hakone; the
+  // Kamakura shore on the right. The sun's track is widened a little so the
+  // midday sun stays in view.
   function azimuthX(az, W) {
-    return W / 2 + ((az - 180) / 105) * (W / 2);
+    return W / 2 + ((az - 250) / 120) * (W / 2);
   }
   function altitudeY(alt, horizonY, u) {
     return horizonY - 1 - Math.pow(clamp01(alt / 70), 0.75) * (horizonY - 6 * u);
@@ -281,132 +283,213 @@
       }
     }
 
-    // --- Far coast to the west: Izu and Hakone, with Fuji, lost in haze by day
-    const ridgeBase = mix(horizonSky, mix(zenith, ocean, 0.5), 0.3 + 0.4 * (1 - daylight));
-    const ridgeAlpha = 0.3 + 0.45 * (1 - daylight * 0.7);
-    for (let x = Math.floor(W * 0.55); x < W; x++) {
+    // --- Distant land along the horizon (Izu, Hakone) and Fuji just right of
+    // Enoshima, as seen from Koshigoe. Lost in haze by day, a band at dusk.
+    const farLand = mix(horizonSky, mix(zenith, ocean, 0.5), 0.3 + 0.45 * (1 - daylight));
+    const farAlpha = 0.28 + 0.5 * (1 - daylight * 0.75);
+    for (let x = 0; x < Math.round(W * 0.74); x++) {
       const v = x / W;
-      let h = (1.5 + Math.sin(v * 40) * 0.6 + Math.sin(v * 17 + 1) * 0.9) * u;
-      const peak = Math.max(0, 1 - Math.abs(v - 0.82) / 0.085);
-      h += Math.pow(peak, 1.35) * 9.6 * u;
-      h *= clamp01((v - 0.55) / 0.06);
-      for (let y = 0; y < h; y++) blend(x, horizonY - 1 - y, ridgeBase, ridgeAlpha);
+      let h = (1.2 + 0.8 * Math.sin(v * 23 + 0.4) + 0.6 * Math.sin(v * 61)) * u;
+      const fuji = Math.max(0, 1 - Math.abs(v - 0.585) / 0.06);
+      h = Math.max(h, (Math.pow(fuji, 1.25) * 8 + 1) * u * (fuji > 0 ? 1 : 0));
+      h *= clamp01((0.74 - v) / 0.04);
+      for (let y = 0; y < h; y++) blend(x, horizonY - 1 - y, farLand, farAlpha);
     }
 
-    // A distant sail on the horizon.
-    if (daylight > 0.05 || lowWarm > 0.2) {
-      const bx = Math.round(W * 0.47);
-      const sail = mix(ocean, zenith, 0.5);
-      const sa = 0.55 * Math.max(daylight, lowWarm);
-      const sh = Math.max(2, Math.round(3.2 * u));
-      for (let y = 0; y < sh; y++) {
-        const w = Math.max(1, Math.round(((y + 1) / sh) * 1.6 * k));
-        for (let x = 0; x < w; x++) blend(bx + x, horizonY - 2 - (sh - 1 - y), sail, sa);
-      }
-      for (let x = -1; x <= Math.round(2 * k); x++) blend(bx + x, horizonY - 1, sail, sa);
-    }
-
-    // --- Open sea: rows darkening toward the shore, flecks of reflected sky
-    const seaTop = mix(ocean, horizonSky, 0.35);
-    const seaLow = dim(ocean, 0.2);
+    // --- Open sea: calm and silvery, mirroring the sky, with fine ripples
+    const seaTop = mix(ocean, horizonSky, 0.5);
+    const seaLow = mix(dim(ocean, 0.15), horizonSky, 0.16);
     for (let y = horizonY; y < surfY; y++) {
       const v = (y - horizonY) / Math.max(1, surfY - horizonY);
-      const row = mix(seaTop, seaLow, Math.pow(v, 0.8));
+      const row = mix(seaTop, seaLow, Math.pow(v, 0.75));
       const period = Math.max(2, Math.round(2 + v * 3 * k));
-      const banded = (y - horizonY) % period === period - 1 ? dim(row, 0.035) : row;
+      const banded = (y - horizonY) % period === period - 1 ? dim(row, 0.03) : row;
       for (let x = 0; x < W; x++) set(x, y, banded);
     }
-    for (let x = 0; x < W; x++) blend(x, horizonY, lift(horizonSky, 0.1), 0.45);
-    const fleck = mix(seaTop, lift(horizonSky, 0.12), 0.4);
+    for (let x = 0; x < W; x++) blend(x, horizonY, lift(horizonSky, 0.12), 0.5);
+    const fleck = mix(seaTop, lift(horizonSky, 0.2), 0.5);
     for (let y = horizonY + 1; y < surfY; y++) {
       const v = (y - horizonY) / Math.max(1, surfY - horizonY);
       const offset = Math.floor(t * (0.4 + v * 1.2) * k);
-      const density = 0.012 + 0.04 * v;
+      const density = 0.015 + 0.05 * v;
       for (let x = 0; x < W; x++) {
         if (hash(x + offset, y, 3) < density) {
-          const len = Math.round((2 + hash(x, y, 5) * (2 + v * 4)) * k);
-          for (let j = 0; j < len; j++) blend(x + j, y, fleck, 0.2 + 0.2 * v);
+          const len = Math.round((2 + hash(x, y, 5) * (2 + v * 5)) * k);
+          for (let j = 0; j < len; j++) blend(x + j, y, fleck, 0.22 + 0.22 * v);
         }
       }
     }
 
-    // --- Enoshima: wooded hill, the Sea Candle lighthouse, a town at its foot
-    const ix0 = Math.round(W * 0.025);
-    const ix1 = Math.round(W * 0.4);
+    // --- Enoshima, from the Kamakura side: a sheer cliff on the left, a flat
+    // wooded top with the Sea Candle, a long slope down to the right, and a
+    // line of lights along its foot and the causeway.
+    // Lights come on as the sun goes down, fully by 6° below the horizon.
+    const lights = clamp01(Math.max(night * 1.3, (4 - alt) / 10));
+    const pulse = t ? (Math.floor(t / 2) % 3 === 0 ? 1 : 0.6) : 0.85;
     const isle = mix(
-      mix(lift(mix(ocean, zenith, 0.5), 0.05), horizonSky, 0.32 * daylight),
+      mix(lift(mix(ocean, zenith, 0.5), 0.05), horizonSky, 0.3 * daylight),
       [12, 14, 26],
-      Math.max(0.35 * night, 0.4 * lowWarm * (1 - daylight * 0.5)),
+      Math.max(0.4 * night, 0.45 * lowWarm * (1 - daylight * 0.5)),
     );
-    const canopyLit = mix(isle, lift(horizonSky, 0.1), 0.18 * daylight + 0.12 * lowWarm);
+    const canopyLit = mix(isle, lift(horizonSky, 0.1), 0.16 * daylight + 0.1 * lowWarm);
+    const ix0 = Math.round(W * 0.3);
+    const ix1 = Math.round(W * 0.545);
+    const top = 8 * u;
+    // Profile traced from the photograph: [position across the island, height].
+    const PROFILE = [
+      [0, 0.06], [0.08, 0.1], [0.11, 0.86], [0.14, 0.98], [0.26, 0.95], [0.36, 0.99],
+      [0.46, 1.02], [0.56, 0.96], [0.66, 0.78], [0.76, 0.6], [0.83, 0.56], [0.87, 0.58],
+      [0.91, 0.42], [0.95, 0.16], [1, 0.06],
+    ];
+    const profile = (v) => {
+      for (let i = 0; i < PROFILE.length - 1; i++) {
+        const [a, ha] = PROFILE[i];
+        const [b, hb] = PROFILE[i + 1];
+        if (v >= a && v <= b) return ha + ((hb - ha) * (v - a)) / (b - a);
+      }
+      return 0;
+    };
     const heights = [];
     for (let x = ix0; x <= ix1; x++) {
       const v = (x - ix0) / (ix1 - ix0);
-      const hill = Math.max(Math.exp(-Math.pow((v - 0.42) / 0.2, 2)), 0.62 * Math.exp(-Math.pow((v - 0.78) / 0.15, 2)), 0.35);
-      const taper = clamp01(v / 0.05) * clamp01((1 - v) / 0.05);
-      // Tree clumps: blocky bumps, a few pixels wide.
-      const clump = Math.floor(x / Math.max(2, Math.round(2.5 * k)));
-      const bump = hash(clump, 5, 53) * 1.6 * u;
-      heights.push(Math.round((2.2 * u + hill * 10.5 * u + bump) * taper));
+      const clump = Math.floor(x / Math.max(2, Math.round(2.2 * k)));
+      const bump = v > 0.12 && v < 0.93 ? (hash(clump, 5, 53) - 0.3) * 1.1 * u : 0;
+      heights.push(Math.max(1, Math.round(profile(v) * top + bump)));
     }
     heights.forEach((h, i) => {
       const x = ix0 + i;
-      for (let y = 0; y < h; y++) set(x, horizonY - 1 - y, y >= h - Math.max(1, Math.round(u * 0.6)) ? canopyLit : isle);
+      for (let y = 0; y < h; y++) set(x, horizonY - 1 - y, y >= h - Math.max(1, Math.round(u * 0.5)) ? canopyLit : isle);
     });
-    // Buildings along the waterline.
-    for (let x = ix0 + Math.round(4 * k); x < ix1 - Math.round(4 * k); x++) {
-      const block = Math.floor(x / Math.max(2, Math.round(2 * k)));
-      if (hash(block, 6, 59) < 0.55) {
-        const bh = Math.round((1 + hash(block, 7, 61) * 2.5) * u) + Math.round(2.2 * u);
-        for (let y = 0; y < bh; y++) set(x, horizonY - 1 - y, isle);
-      }
+    // Low land at both ends: the spit on the left, the harbor and causeway on the right.
+    for (let x = ix0 - Math.round(W * 0.03); x < Math.round(W * 0.72); x++) {
+      if (x >= ix0 && x <= ix1) continue;
+      const h = x < ix0 ? Math.round(0.6 * u) : Math.max(1, Math.round(0.5 * u * (1 - (x - ix1) / (W * 0.18))));
+      for (let y = 0; y < h; y++) set(x, horizonY - 1 - y, isle);
     }
-    // The Sea Candle: tapered tower, observation deck, lantern.
-    const tx = Math.round(ix0 + (ix1 - ix0) * 0.4);
-    const hillTop = heights[tx - ix0] || 0;
-    const towerH = Math.round(9 * u);
-    const towerCol = mix(isle, lift(horizonSky, 0.25), 0.25 + 0.3 * daylight);
-    const baseY = horizonY - 1 - hillTop;
+    // The Sea Candle: tapered tower, a lit observation deck, the lantern.
+    const tx = Math.round(ix0 + (ix1 - ix0) * 0.44);
+    const baseY = horizonY - 1 - (heights[tx - ix0] || 0);
+    const towerH = Math.round(4.6 * u);
+    const towerCol = mix(isle, lift(horizonSky, 0.25), 0.22 + 0.3 * daylight);
     for (let y = 0; y < towerH; y++) {
-      const w = Math.max(1, Math.round((2 - 0.9 * (y / towerH)) * k));
+      const w = Math.max(1, Math.round((1.9 - 0.8 * (y / towerH)) * k));
       for (let x = 0; x < w; x++) set(tx - (w >> 1) + x, baseY - y, towerCol);
     }
-    // Observation deck, then a lantern room with a small dome: a candle, not a cross.
     const deckY = baseY - towerH;
-    const deckW = Math.max(3, Math.round(2.6 * k));
+    const deckW = Math.max(3, Math.round(2.4 * k));
     for (let x = 0; x < deckW; x++) set(tx - (deckW >> 1) + x, deckY, towerCol);
-    const tw = Math.max(1, Math.round(1.6 * k));
-    const lanternH = Math.max(1, Math.round(1.4 * k));
-    for (let r = 1; r <= lanternH; r++) {
-      for (let x = 0; x < tw; x++) set(tx - (tw >> 1) + x, deckY - r, towerCol);
-    }
-    const lampY = deckY - Math.ceil(lanternH / 2);
-    const domeW = Math.max(1, tw - 2);
-    for (let x = 0; x < domeW; x++) set(tx - (domeW >> 1) + x, deckY - lanternH - 1, towerCol);
-    const lights = clamp01(night * 1.3 + (alt < 4 ? 0.35 * lowWarm : 0));
+    const tw = Math.max(1, Math.round(1.4 * k));
+    const lanternH = Math.max(1, Math.round(1.2 * k));
+    for (let r = 1; r <= lanternH; r++) for (let x = 0; x < tw; x++) set(tx - (tw >> 1) + x, deckY - r, towerCol);
     if (lights > 0.05) {
-      const pulse = t ? (Math.floor(t / 2) % 3 === 0 ? 1 : 0.6) : 0.85;
-      for (let r = 0; r < Math.max(1, lanternH - 1); r++) {
-        for (let x = 0; x < tw; x++) blend(tx - (tw >> 1) + x, lampY - r + (lanternH > 2 ? 1 : 0), WARM_LIGHT, lights * pulse);
+      for (let r = 1; r <= lanternH; r++) {
+        for (let x = 0; x < tw; x++) blend(tx - (tw >> 1) + x, deckY - r, WARM_LIGHT, lights * pulse);
       }
-      const R = Math.ceil(3 * k);
+      const R = Math.ceil(3.2 * k);
       for (let dy = -R; dy <= R; dy++) {
         for (let dx = -R; dx <= R; dx++) {
-          const d = Math.hypot(dx, dy) / (3 * k);
-          if (d < 1 && d > 0.25) blend(tx + dx, lampY + dy, WARM_LIGHT, 0.22 * lights * pulse * (1 - d));
+          const d = Math.hypot(dx, dy) / (3.2 * k);
+          if (d < 1 && d > 0.25) blend(tx + dx, deckY - lanternH / 2 + dy, WARM_LIGHT, 0.2 * lights * pulse * (1 - d));
         }
       }
-      // Town lights, and their reflections on the water.
-      for (let x = ix0 + Math.round(5 * k); x < ix1 - Math.round(5 * k); x++) {
-        if (hash(x, 3, 67) > 0.22) continue;
-        const ly = horizonY - 1 - Math.floor(hash(x, 4, 71) * 3.2 * u);
+      // The lit band at the foot of the tower, a few lights on the hillside.
+      for (let x = -1; x <= 1; x++) blend(tx + x, baseY - Math.round(0.4 * u), WARM_LIGHT, 0.8 * lights);
+      for (let x = ix0 + Math.round(W * 0.03); x < ix1 - Math.round(W * 0.03); x++) {
+        if (hash(x, 13, 131) < 0.035) {
+          const h = heights[x - ix0];
+          blend(x, horizonY - 1 - Math.round(h * (0.35 + 0.4 * hash(x, 14, 137))), [236, 236, 228], 0.7 * lights);
+        }
+      }
+      // Lights along the foot of the island and the causeway, mirrored on the sea.
+      for (let x = ix0 - Math.round(W * 0.03); x < Math.round(W * 0.72); x++) {
+        const onIsland = x >= ix0 && x <= ix1;
+        if (hash(x, 3, 67) > (onIsland ? 0.3 : 0.12)) continue;
+        const ly = horizonY - 1 - (onIsland ? Math.floor(hash(x, 4, 71) * 1.6 * u) : 0);
         const on = lights * (0.55 + 0.45 * hash(x, 8, 73));
         blend(x, ly, WARM_LIGHT, on);
-        for (let y = horizonY; y < horizonY + 7 * u; y++) {
-          if (hash(x, y, 79 + Math.floor(t / 2)) < 0.45) {
-            blend(x, y, WARM_LIGHT, on * 0.45 * (1 - (y - horizonY) / (7 * u)));
+        for (let y = horizonY; y < horizonY + 6 * u; y++) {
+          if (hash(x, y, 79 + Math.floor(t / 2)) < 0.4) blend(x, y, WARM_LIGHT, on * 0.4 * (1 - (y - horizonY) / (6 * u)));
+        }
+      }
+    }
+
+    // --- Koshigoe on the right: the seawall, the green harbor light,
+    // apartment blocks with lit windows, and the hill rising to Kamakura.
+    {
+      const x0 = Math.round(W * 0.705);
+      // By day: wooded hill, white-beige blocks, grey seawall, a little haze.
+      // From sunset on they become silhouettes.
+      const f = clamp01(1 - daylight * 1.15);
+      const dark = mix(zenith, [8, 10, 18], 0.55);
+      const land = mix(mix([62, 86, 72], horizonSky, 0.25), dark, f);
+      const block = mix(mix([206, 204, 196], horizonSky, 0.2), lift(dark, 0.08), f);
+      const wall = mix(mix([150, 148, 140], horizonSky, 0.15), lift(dark, 0.05), f);
+      const shore = (x) => horizonY + Math.round(((x - x0) / (W - x0)) * 4 * u);
+      const tops = [];
+      for (let x = x0; x < W; x++) {
+        const v = (x - x0) / (W - x0);
+        let h = (1.5 + 1.2 * Math.sin(v * 9)) * u; // trees behind the harbor
+        if (v > 0.3 && v < 0.93) {
+          const b = Math.floor(x / Math.max(3, Math.round(4 * k)));
+          h = Math.max(h, (3.5 + hash(b, 15, 139) * 6) * u * (0.6 + 0.6 * v));
+        }
+        if (v > 0.72) h = Math.max(h, Math.pow((v - 0.72) / 0.28, 1.4) * 15 * u);
+        tops.push(Math.round(h));
+      }
+      tops.forEach((h, i) => {
+        const x = x0 + i;
+        const v = i / (W - x0);
+        const base = shore(x) - Math.round(1.5 * u);
+        const isBlock = v > 0.3 && v < 0.93 && h > 3 * u;
+        for (let y = 0; y < h; y++) {
+          const window = isBlock && y % Math.max(2, Math.round(1.5 * k)) === 1 && hash(x, y, 163) < 0.3;
+          set(x, base - y, isBlock && y < h - 1 ? (window ? dim(block, 0.22) : block) : land);
+        }
+        // Seawall at the water's edge.
+        for (let y = base; y <= shore(x) + Math.round(0.8 * u); y++) set(x, y, y === base ? lift(wall, 0.15) : wall);
+      });
+      if (lights > 0.05) {
+        // Windows and street lamps.
+        tops.forEach((h, i) => {
+          const x = x0 + i;
+          const base = shore(x) - Math.round(1.5 * u);
+          for (let y = Math.round(1.5 * u); y < h - 1; y += Math.max(2, Math.round(1.5 * k))) {
+            if (hash(x, y, 149) < 0.09) blend(x, base - y, WARM_LIGHT, 0.75 * lights);
+          }
+          if (i % Math.round(7 * k) === 0) blend(x, base - 1, WARM_LIGHT, lights);
+        });
+        // The green harbor light, and its long reflection.
+        const gx = Math.round(W * 0.785);
+        const gy = shore(gx) - Math.round(4.2 * u);
+        const green = [70, 232, 150];
+        const R = Math.ceil(2.6 * k);
+        for (let dy = -R; dy <= R; dy++) {
+          for (let dx = -R; dx <= R; dx++) {
+            const d = Math.hypot(dx, dy) / (2.6 * k);
+            if (d < 1) blend(gx + dx, gy + dy, green, (d < 0.3 ? 1 : 0.35 * (1 - d)) * lights);
           }
         }
+        for (let y = shore(gx) + Math.round(u); y < surfY; y++) {
+          const fade = 1 - (y - shore(gx)) / Math.max(1, surfY - shore(gx));
+          if (hash(gx, y, 151 + Math.floor(t / 2)) < 0.35) {
+            for (let dx = -Math.round(k / 2); dx <= Math.round(k / 2); dx++) blend(gx + dx, y, green, 0.28 * lights * fade);
+          }
+        }
+      }
+      // The light's post, visible by day too.
+      const gx = Math.round(W * 0.785);
+      for (let y = 1; y < Math.round(4 * u); y++) set(gx, shore(gx) - Math.round(1.5 * u) - y, wall);
+    }
+
+    // Two surfers waiting for a wave, by day.
+    if (night < 0.6) {
+      const sa = 0.7 * (1 - night);
+      const figure = mix(isle, [20, 24, 34], 0.4);
+      for (const [fx, tall] of [[0.18, 2.4], [0.195, 2.1]]) {
+        const x = Math.round(W * fx);
+        const y = horizonY + Math.round(5 * u);
+        for (let j = 0; j < Math.round(tall * u); j++) for (let w = 0; w < Math.max(1, Math.round(0.6 * k)); w++) blend(x + w, y - j, figure, sa);
+        for (let j = -Math.round(1.2 * k); j <= Math.round(1.2 * k); j++) blend(x + j, y + 1, figure, sa * 0.8);
       }
     }
 
@@ -491,6 +574,33 @@
           if (hash(x, y, 11 + Math.floor(t / 2)) < 0.4 * fall) blend(x, y, lightSrc.c, lightSrc.s * fall);
         }
       }
+    }
+
+    // --- Concrete breakwaters in the foreground, as on the beach at Koshigoe.
+    {
+      const concrete = mix(
+        mix(dim(beach, 0.15), [150, 150, 146], 0.45),
+        mix(zenith, [10, 12, 20], 0.5),
+        Math.max(0.85 * night, 0.55 * (1 - daylight)),
+      );
+      const topLit = mix(concrete, lift(horizonSky, 0.15), 0.35);
+      const face = dim(concrete, 0.32);
+      const slab = (start, top0, rise, surface, depth) => {
+        const xs = Math.round(W * start);
+        for (let x = xs; x < W; x++) {
+          const v = (x - xs) / Math.max(1, W - xs);
+          const yTop = Math.round(top0 - rise * v);
+          const tip = Math.min(1, (x - xs) / (4 * k));
+          const faceH = Math.max(1, Math.round(depth * tip));
+          for (let j = 0; j < surface; j++) set(x, yTop + j, mix(topLit, concrete, j / Math.max(1, surface)));
+          for (let j = 0; j < faceH; j++) set(x, yTop + surface + j, mix(face, dim(face, 0.25), j / faceH));
+          const h = hash(Math.floor(x / (2 * k)), 16, 157 + Math.floor(t / 2));
+          if (h < 0.55) blend(x, yTop + surface + faceH, foam, 0.45 + 0.2 * daylight);
+          if (x - xs < 3 * k && h < 0.8) blend(x - Math.round(k), yTop + surface + faceH - 1, foam, 0.4);
+        }
+      };
+      slab(0.345, surfY - 0.3 * u, 0.6 * u, Math.max(1, Math.round(0.5 * u)), 1.4 * u);
+      slab(0.27, surfY + 1.8 * u, 0.4 * u, Math.max(1, Math.round(0.8 * u)), 3.2 * u);
     }
 
     ctx.putImageData(img, 0, 0);
