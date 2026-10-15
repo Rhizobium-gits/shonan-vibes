@@ -82,16 +82,33 @@
   // Layout
   // ------------------------------------------------------------------------
 
+  // Square pixels, sized by the panel's width. A taller panel never stretches
+  // the picture; the extra rows become more sky (see layout()).
   function resize() {
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return false;
-    const W = mode === 'panel' ? 256 : 240;
-    const H = Math.max(36, Math.min(160, Math.round((W * rect.height) / rect.width)));
+    const across = mode === 'panel' ? 256 : 240;
+    const px = Math.max(rect.width / across, rect.height / 600);
+    const W = Math.max(1, Math.round(rect.width / px));
+    const H = Math.max(12, Math.round(rect.height / px));
     if (canvas.width !== W || canvas.height !== H) {
       canvas.width = W;
       canvas.height = H;
     }
     return true;
+  }
+
+  // The ground (sea and beach) keeps its height; the sky takes the rest.
+  // Only very short panels shrink everything together (fit < 1).
+  const SEA = 18;
+  const BEACH = 14;
+  const MIN_SKY = 30;
+  function layout(W, H) {
+    const k = W / 240;
+    const fit = Math.min(1, H / ((SEA + BEACH + MIN_SKY) * k));
+    const horizonY = H - Math.round((SEA + BEACH) * k * fit);
+    const shoreY = horizonY + Math.round(SEA * k * fit);
+    return { horizonY, shoreY, fit };
   }
 
   // Azimuth (90 east … 270 west) to x, facing south.
@@ -145,8 +162,7 @@
     const clouds = clamp01(frame.cloudCover || 0);
     const t = motion && !reduceMotion.matches ? tick : 0;
 
-    const horizonY = Math.round(H * 0.56);
-    const shoreY = Math.round(H * 0.8);
+    const { horizonY, shoreY, fit } = layout(W, H);
 
     // Light source on screen
     const sunUp = frame.sun.altitude > -1.5;
@@ -158,7 +174,7 @@
     const lowSun = sunUp ? 1 - clamp01(frame.sun.altitude / 35) : 0;
 
     // --- Sky: banded gradient, then a dithered halo around the sun
-    const BANDS = 8;
+    const BANDS = Math.max(8, Math.round(horizonY / 5));
     for (let y = 0; y < horizonY; y++) {
       const v = Math.pow(y / Math.max(1, horizonY - 1), 1.45) * BANDS;
       for (let x = 0; x < W; x++) {
@@ -167,7 +183,7 @@
         let c = mix(zenith, horizonSky, Math.min(1, band / BANDS));
         if (sunUp || frame.sun.altitude > -10) {
           const dx = (x - sunX) / (W * 0.32);
-          const dy = (y - Math.max(sunY, horizonY - 2)) / (H * 0.5);
+          const dy = (y - Math.max(sunY, horizonY - 2)) / (W * 0.16);
           const d = Math.sqrt(dx * dx + dy * dy);
           const strength = 0.55 * Math.max(lowSun, frame.sun.altitude < 0 ? clamp01(1 + frame.sun.altitude / 10) : 0);
           const w = Math.pow(clamp01(1 - d), 2) * strength;
@@ -180,7 +196,7 @@
     // --- Stars
     if (night > 0.05) {
       const r = rng(7);
-      const count = Math.round((W * horizonY) / 70);
+      const count = Math.round((W * horizonY) / 85);
       const star = [222, 230, 242];
       for (let i = 0; i < count; i++) {
         const x = Math.floor(r() * W);
@@ -230,7 +246,7 @@
       [2, 6, 9, 7],
       [5, 10, 16, 12, 6],
     ];
-    const nClouds = 2 + Math.round(clouds * 5);
+    const nClouds = Math.round((2 + clouds * 5) * Math.max(1, horizonY / 42));
     const cr = rng(19);
     const lightSide = mix(lift(horizonSky, 0.35), glow, 0.35 * lowSun);
     const darkSide = mix(zenith, horizonSky, 0.45);
@@ -239,7 +255,7 @@
       const shape = cloudShapes[i % cloudShapes.length];
       const drift = (frame.minutes || 0) * 0.04 + cr() * W;
       const cx = Math.round(drift % (W + 30)) - 15;
-      const cy = Math.round(4 + cr() * (horizonY * 0.55));
+      const cy = Math.round(4 + cr() * (horizonY * 0.6));
       const alpha = (0.28 + 0.4 * clouds) * (0.5 + 0.5 * Math.max(daylight, 1 - night));
       shape.forEach((w, row) => {
         for (let x = -Math.floor(w / 2); x < Math.ceil(w / 2); x++) {
@@ -256,7 +272,7 @@
       const u = x / W;
       let h = 1.5 + Math.sin(u * 40) * 0.6 + Math.sin(u * 17 + 1) * 0.9;
       const peak = Math.max(0, 1 - Math.abs(u - 0.82) / 0.085);
-      h += Math.pow(peak, 1.35) * H * 0.13;
+      h += Math.pow(peak, 1.35) * W * 0.04 * fit;
       h *= clamp01((u - 0.56) / 0.06);
       for (let y = 0; y < h; y++) blend(x, horizonY - 1 - y, ridgeBase, ridgeAlpha);
     }
@@ -267,11 +283,11 @@
     const ix1 = Math.round(W * 0.745);
     for (let x = ix0; x <= ix1; x++) {
       const u = (x - ix0) / (ix1 - ix0);
-      const h = Math.round(Math.sin(Math.PI * Math.pow(u, 0.8)) * H * 0.065) + 1;
+      const h = Math.round(Math.sin(Math.PI * Math.pow(u, 0.8)) * W * 0.02 * fit) + 1;
       for (let y = 0; y < h; y++) set(x, horizonY - 1 - y, isle);
     }
     const lx = Math.round(W * 0.7);
-    const lTop = horizonY - 1 - Math.round(H * 0.065) - 4;
+    const lTop = horizonY - 1 - Math.round(W * 0.02 * fit) - Math.max(2, Math.round(4 * fit));
     for (let y = lTop + 1; y < horizonY - 1; y++) set(lx, y, isle);
     if (night > 0.2) {
       const pulse = t ? (Math.floor(t / 2) % 3 === 0 ? 1 : 0.55) : 0.85;

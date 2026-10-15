@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Shoreline: making the panel taller no longer stretches the picture. Pixels stay square, the sea and beach keep their height, and the extra space becomes more sky (the midday sun climbs higher in a tall panel).
+
 ## 0.2.0
 
 - Midday is now a blue sky: the editor opens from night navy into a clear sky blue through the morning, and syntax colors become pale tints that float on it (lilac keywords, ice-blue functions, green strings, peach numbers, sunlight-yellow types).
