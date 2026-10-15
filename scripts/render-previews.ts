@@ -15,6 +15,7 @@ import * as path from 'path';
 import { DEFAULT_ATMOSPHERE, DEFAULT_SKY, SkyOptions } from '../src/engine';
 import { SceneFrame, dayFrames, frameAt } from '../src/frame';
 import { buildTheme } from '../src/theme/mapper';
+import { moonLine } from '../src/moonLine';
 import { computeAtmosphere, skyAt } from '../src/engine';
 
 const root = path.resolve(__dirname, '..', '..');
@@ -240,6 +241,7 @@ body { font: 13px -apple-system, BlinkMacSystemFont, sans-serif; }
   <div class="scene-wrap"><canvas id="scene"></canvas></div>
   <section class="timeline">
     <div class="readout"><span id="clock" class="clock"></span><span id="phase" class="phase"></span><span id="sun" class="sun"></span></div>
+    <div id="moon" class="moonline">${moonLine(new Date('2026-10-15T16:35:00+09:00'), SKY)}</div>
     <input id="scrub" type="range" min="0" max="1430" step="10" value="${frame.minutes}">
     <div class="hours"><span>0</span><span>3</span><span>6</span><span>9</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div>
     <div class="actions"><button id="now" type="button">Now</button><button id="hold" type="button">Hold the light here</button></div>

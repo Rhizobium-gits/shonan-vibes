@@ -17,6 +17,8 @@ import {
   MoonPosition,
   dailyExtremes,
   horizontal,
+  moonEvents,
+  moonPhaseName,
   moonPosition,
   siderealTime,
   sunEvents,
@@ -58,6 +60,8 @@ export interface Sky {
   moon: MoonPosition;
   /** The instant actually evaluated, after the time-zone mapping. */
   sceneTime: number;
+  /** The instant used for the moon and stars (sceneTime, plus the manual-sun offset). */
+  skyTime: number;
   /** 1..366, for seasonal tints. */
   dayOfYear: number;
   /** Local sidereal time in degrees, for turning the stars. */
@@ -119,6 +123,7 @@ export function skyAt(now: Date, opts: SkyOptions = DEFAULT_SKY): Sky {
     sun,
     moon,
     sceneTime,
+    skyTime,
     dayOfYear: dayOfYear(sceneTime),
     siderealTime: siderealTime(skyTime, opts.longitude),
     latitude: opts.latitude,
@@ -197,6 +202,39 @@ export function todaysSunTimes(
   const ev = sunEvents(midnight.getTime() + shift, opts.latitude, opts.longitude);
   const back = (t: number | null) => (t === null ? null : new Date(t - shift));
   return { sunrise: back(ev.sunrise), sunset: back(ev.sunset) };
+}
+
+export interface MoonDay {
+  name: string;
+  /** Illuminated fraction now, 0..1. */
+  illumination: number;
+  rise: Date | null;
+  /** When the moon is highest, due south. */
+  transit: Date | null;
+  set: Date | null;
+}
+
+/**
+ * Today's moon on the user's clock: its phase, and when it rises, crosses the
+ * meridian and sets. These follow the phase: a new moon is highest around
+ * noon, a first quarter in the evening, a full moon around midnight, a last
+ * quarter in the morning.
+ */
+export function todaysMoon(now: Date, opts: SkyOptions): MoonDay {
+  const midnight = new Date(now);
+  midnight.setHours(0, 0, 0, 0);
+  const noon = new Date(midnight.getTime() + 12 * 3_600_000);
+  const offset = skyAt(noon, opts).skyTime - noon.getTime();
+  const ev = moonEvents(midnight.getTime() + offset, opts.latitude, opts.longitude);
+  const back = (t: number | null) => (t === null ? null : new Date(t - offset));
+  const moon = skyAt(now, opts).moon;
+  return {
+    name: moonPhaseName(moon.phase),
+    illumination: moon.illumination,
+    rise: back(ev.rise),
+    transit: back(ev.transit),
+    set: back(ev.set),
+  };
 }
 
 /** "05:47" → 347. Empty or invalid → null. */

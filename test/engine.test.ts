@@ -12,6 +12,7 @@ import {
   fromHex,
   lch,
   minContrast,
+  moonEvents,
   skyAt,
   staticAtmosphere,
   sunPosition,
@@ -119,6 +120,24 @@ describe('moon', () => {
     assert.ok(setting.azimuth > 260 && setting.azimuth < 300 && setting.altitude < 20);
     const sun = skyAt(new Date('2026-10-26T14:40:00Z'), SHONAN_REAL).sun;
     assert.ok(sun.altitude < -50, 'the full moon and the sun do not share the sky');
+  });
+
+  it('is highest at a time set by its phase, about 50 minutes later each day', () => {
+    const transitJst = (day: string) => {
+      const t = moonEvents(JST(`${day}T00:00:00`).getTime(), SHONAN_REAL.latitude, SHONAN_REAL.longitude).transit;
+      assert.ok(t !== null, `transit on ${day}`);
+      return ((t! - JST(`${day}T00:00:00`).getTime()) / 3_600_000 + 24) % 24; // hours after midnight JST
+    };
+    const near = (h: number, target: number, tol: number) => Math.abs(((h - target + 36) % 24) - 12) <= tol;
+    assert.ok(near(transitJst('2026-10-10'), 11.5, 1.5), 'new moon: around noon');
+    assert.ok(near(transitJst('2026-10-18'), 17.8, 1.5), 'first quarter: early evening');
+    assert.ok(near(transitJst('2026-10-26'), 23.8, 1.5), 'full moon: around midnight');
+    assert.ok(near(transitJst('2026-11-02'), 5.9, 1.5), 'last quarter: early morning');
+    const delays: number[] = [];
+    for (let d = 11; d < 17; d++) {
+      delays.push((transitJst(`2026-10-${d + 1}`) - transitJst(`2026-10-${d}`)) * 60);
+    }
+    for (const m of delays) assert.ok(m > 35 && m < 70, `daily delay ${m.toFixed(0)} min`);
   });
 
   it('turns its lit side toward the sun', () => {

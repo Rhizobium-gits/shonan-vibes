@@ -775,6 +775,8 @@
     if (msg.type === 'day') {
       day = msg.frames;
       previewing = false;
+      const moonEl = document.getElementById('moon');
+      if (moonEl && msg.moon) moonEl.textContent = msg.moon;
     }
     // Don't yank the view away from an hour the user is previewing.
     if (!previewing) {

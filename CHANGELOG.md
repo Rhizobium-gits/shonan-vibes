@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+
+- Today's moon is listed in the Shoreline tab and in the light dot's tooltip: its phase, how much is lit, and when it rises, is highest (due south) and sets. These follow the phase: a new moon is highest around noon, a first quarter in the evening, a full moon around midnight, a last quarter at dawn, about 50 minutes later each day.
+- Tests check the moon's highest point for each phase across a lunation and the daily delay.
+
 ## 0.5.0
 
 - The sun and moon follow the real sky. The Shoreline is now a panorama from east to north-west, so the sun rises over the Miura peninsula, crosses the open sea and sets by Enoshima and Fuji (or over the Koshigoe hills in summer).

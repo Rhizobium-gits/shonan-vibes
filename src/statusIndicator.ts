@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Moment } from './controller';
 import { skyOptions } from './config';
 import { clockLabel } from './frame';
-import { todaysSunTimes } from './engine';
+import { todaysMoon, todaysSunTimes } from './engine';
 
 /**
  * One small dot at the far right of the status bar, in the color of the
@@ -38,6 +38,11 @@ export class StatusIndicator implements vscode.Disposable {
     md.isTrusted = { enabledCommands: ['shonanVibes.openShoreline', 'shonanVibes.previewTime', 'shonanVibes.followSun'] };
     md.appendMarkdown(`**Shonan Vibes** · ${frame.phaseName}\n\n`);
     md.appendMarkdown(`${where}  \nSunrise ${fmt(times.sunrise)} · Sunset ${fmt(times.sunset)}\n\n`);
+    const moon = todaysMoon(new Date(), skyOptions(settings));
+    md.appendMarkdown(
+      `${moon.name}, ${Math.round(moon.illumination * 100)}% lit  \n` +
+        `Moonrise ${fmt(moon.rise)} · Highest ${fmt(moon.transit)} · Moonset ${fmt(moon.set)}\n\n`,
+    );
     if (settings.fixedTime !== null) {
       md.appendMarkdown(`Light held at **${frame.clock}** · [Follow the sun](command:shonanVibes.followSun)\n\n`);
     } else if (!settings.dynamicColors) {

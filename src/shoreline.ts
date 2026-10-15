@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { Controller, Moment } from './controller';
-import { SECTION } from './config';
+import { SECTION, skyOptions } from './config';
+import { moonLine } from './moonLine';
 import { clockLabel } from './frame';
 
 type Mode = 'view' | 'panel';
@@ -104,6 +105,7 @@ export class ShorelinePanel {
     void this.panel.webview.postMessage({
       type: 'day',
       frames: this.controller.today(),
+      moon: moonLine(new Date(), skyOptions(m.settings)),
       frame: m.frame,
       held: m.settings.fixedTime !== null,
       motion: m.settings.shorelineMotion,
@@ -175,6 +177,7 @@ const PANEL_BODY = `
       <span id="phase" class="phase"></span>
       <span id="sun" class="sun"></span>
     </div>
+    <div id="moon" class="moonline"></div>
     <input id="scrub" type="range" min="0" max="1430" step="10" aria-label="Preview a time of day">
     <div class="hours" aria-hidden="true"><span>0</span><span>3</span><span>6</span><span>9</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div>
     <div class="actions">

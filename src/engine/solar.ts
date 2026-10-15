@@ -181,6 +181,70 @@ export function moonPosition(ms: number, latitude: number, longitude: number): M
   };
 }
 
+/** Apparent altitude of the moon's center when its upper limb touches the horizon. */
+const MOON_HORIZON = -0.26;
+
+/**
+ * Moonrise, the moon's highest point (meridian transit) and moonset within
+ * [startMs, startMs + 24h). They come about 50 minutes later each day, so on
+ * some days one of them falls outside the window and is null.
+ */
+export function moonEvents(
+  startMs: number,
+  latitude: number,
+  longitude: number,
+): { rise: number | null; transit: number | null; set: number | null } {
+  const step = 10 * 60_000;
+  const alt = (t: number) => moonPosition(t, latitude, longitude).altitude;
+  const f = (t: number) => alt(t) - MOON_HORIZON;
+  let rise: number | null = null;
+  let set: number | null = null;
+  let best = -Infinity;
+  let bestT = startMs;
+  let prevT = startMs;
+  let prev = f(prevT);
+  for (let t = startMs; t <= startMs + DAY_MS; t += step) {
+    const cur = f(t);
+    if (cur > best) {
+      best = cur;
+      bestT = t;
+    }
+    if (t > startMs) {
+      if (prev < 0 && cur >= 0 && rise === null) rise = bisect(f, prevT, t);
+      if (prev >= 0 && cur < 0 && set === null) set = bisect(f, prevT, t);
+    }
+    prevT = t;
+    prev = cur;
+  }
+  // The highest point is a transit only if the moon was still climbing before
+  // it and sinking after it inside the window; refine it to the minute.
+  let transit: number | null = null;
+  if (bestT > startMs && bestT < startMs + DAY_MS) {
+    let a = bestT - step;
+    let b = bestT + step;
+    for (let i = 0; i < 30; i++) {
+      const m1 = a + (b - a) / 3;
+      const m2 = b - (b - a) / 3;
+      if (alt(m1) < alt(m2)) a = m1;
+      else b = m2;
+    }
+    transit = (a + b) / 2;
+  }
+  return { rise, transit, set };
+}
+
+export function moonPhaseName(phase: number): string {
+  const p = ((phase % 1) + 1) % 1;
+  if (p < 0.03 || p > 0.97) return 'New moon';
+  if (p < 0.22) return 'Waxing crescent';
+  if (p < 0.28) return 'First quarter';
+  if (p < 0.47) return 'Waxing gibbous';
+  if (p < 0.53) return 'Full moon';
+  if (p < 0.72) return 'Waning gibbous';
+  if (p < 0.78) return 'Last quarter';
+  return 'Waning crescent';
+}
+
 /**
  * Sunrise, solar noon and sunset within [startMs, startMs + 24h), found by
  * scanning and bisection. Either event can be null (polar day or night).

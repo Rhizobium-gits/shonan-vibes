@@ -82,6 +82,12 @@ canvas {
   color: var(--comment);
 }
 
+.moonline {
+  color: var(--comment);
+  font-size: 0.92em;
+  margin: -4px 0 10px;
+}
+
 input[type='range'] {
   width: 100%;
   margin: 0;
