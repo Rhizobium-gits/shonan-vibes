@@ -6,16 +6,23 @@ import {
   DEFAULT_SKY,
   computeAtmosphere,
   contrast,
+  GuardedRole,
   dayPhase,
   deltaE,
   fromHex,
   lch,
+  minContrast,
   skyAt,
   staticAtmosphere,
   sunPosition,
   toHex,
+  toLch,
   todaysSunTimes,
 } from '../src/engine';
+
+const GUARDED: GuardedRole[] = [
+  'text', 'comment', 'keyword', 'func', 'string', 'number', 'type', 'param', 'property', 'punct', 'operator', 'escape',
+];
 
 const JST = (iso: string) => new Date(`${iso}+09:00`);
 const SHONAN_REAL = { ...DEFAULT_SKY, useLocalTime: false };
@@ -115,27 +122,15 @@ describe('atmosphere', () => {
       { ...DEFAULT_ATMOSPHERE, nightDarkness: 1, oceanSaturation: 0, cloudCover: 1 },
       { ...DEFAULT_ATMOSPHERE, intensity: 0.5 },
     ];
-    const minimum: Record<string, number> = {
-      text: 9,
-      comment: 4.5,
-      keyword: 6,
-      func: 6,
-      string: 6,
-      number: 5.5,
-      type: 6.5,
-      param: 7,
-      property: 7,
-      punct: 5,
-      operator: 5,
-      escape: 6,
-    };
     for (const opts of variants) {
       for (const day of DAYS) {
         for (const d of minutesOf(day, 10)) {
           const p = computeAtmosphere(skyAt(d, SHONAN_REAL), opts).palette;
-          for (const [role, min] of Object.entries(minimum)) {
-            const c = contrast(p[role as keyof typeof p], p.room);
-            assert.ok(c >= min - 0.05, `${role} ${c.toFixed(2)} < ${min} at ${d.toISOString()}`);
+          for (const role of GUARDED) {
+            const min = minContrast(role, p.room);
+            const c = contrast(p[role], p.room);
+            assert.ok(c >= min - 0.05, `${role} ${c.toFixed(2)} < ${min.toFixed(2)} at ${d.toISOString()}`);
+            assert.ok(c >= 4.5, `${role} below WCAG AA at ${d.toISOString()}`);
           }
         }
       }
@@ -157,11 +152,16 @@ describe('atmosphere', () => {
     }
   });
 
-  it('stays dark: the editor background is never a light theme', () => {
+  it('opens into a blue sky at noon, but never becomes a white light theme', () => {
+    const noon = computeAtmosphere(skyAt(JST('2026-06-21T11:40:00'), SHONAN_REAL)).palette;
+    const night = computeAtmosphere(skyAt(JST('2026-06-21T00:30:00'), SHONAN_REAL)).palette;
+    assert.ok(noon.room.L > night.room.L + 0.18, 'noon is clearly brighter than night');
+    assert.ok(toLch(noon.room).c > 0.07 && Math.abs(toLch(noon.room).h - 240) < 15, 'noon is sky blue');
     for (const day of DAYS) {
       for (const d of minutesOf(day, 15)) {
-        const room = computeAtmosphere(skyAt(d, SHONAN_REAL), { ...DEFAULT_ATMOSPHERE, nightDarkness: 0 }).palette.room;
-        assert.ok(room.L < 0.32, `room L ${room.L} at ${d.toISOString()}`);
+        const p = computeAtmosphere(skyAt(d, SHONAN_REAL), { ...DEFAULT_ATMOSPHERE, nightDarkness: 0 }).palette;
+        assert.ok(p.room.L <= 0.41, `room L ${p.room.L} at ${d.toISOString()}`);
+        assert.ok(p.text.L > p.room.L + 0.5, `text stays light on the sky at ${d.toISOString()}`);
       }
     }
   });

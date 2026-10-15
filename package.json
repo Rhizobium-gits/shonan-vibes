@@ -1,8 +1,8 @@
 {
   "name": "shonan-vibes",
   "displayName": "Shonan Vibes",
-  "description": "A quiet dark theme that follows the light of the Shonan coast through the day: moonlit night, violet dawn, ocean-blue noon, golden sunset. One theme, one coastline, one day.",
-  "version": "0.1.1",
+  "description": "A quiet theme that follows the light of the Shonan coast through the day: moonlit night, violet dawn, blue-sky noon, golden sunset. One theme, one coastline, one day.",
+  "version": "0.2.0",
   "publisher": "tsubasato",
   "license": "MIT",
   "icon": "media/icon.png",

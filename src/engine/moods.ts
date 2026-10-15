@@ -15,11 +15,14 @@
  *            the Shoreline view's pixel scene (real sky brightness)
  *   text … param
  *            syntax roles. Each keeps its family all day; only the light on
- *            it changes. Lightness tiers are kept stable so roles stay apart:
+ *            it changes. In the dark hours, lightness tiers keep roles apart:
  *              text 0.87–0.90 · type (sand) / param (pale rose) 0.83–0.86
  *              string 0.80–0.83
  *              keyword 0.78–0.84 (bright) · function 0.77–0.80 (middle)
  *              number 0.72–0.81 (low whenever it is bluish) · comment 0.60–0.66
+ *            Under the midday blue sky every role becomes a pale tint (0.80–0.97)
+ *            so it floats on the blue: lilac keywords, ice-blue functions, green
+ *            strings, peach numbers, sunlight-yellow types.
  */
 
 import { Lab, lch, mix } from './color';
@@ -145,73 +148,73 @@ export const SUNRISE = mood({
   param: [0.85, 0.036, 20],
 });
 
-/** Sun ~14°: the orange fades into pale blue, then ocean blue. */
+/** Sun ~14°: the orange fades, the sky opens into blue. */
 export const MORNING = mood({
-  room: [0.24, 0.034, 245],
-  sky: [0.7, 0.07, 235],
-  glow: [0.9, 0.05, 80],
-  sea: [0.285, 0.06, 242],
+  room: [0.33, 0.065, 242],
+  sky: [0.8, 0.07, 228],
+  glow: [0.92, 0.05, 80],
+  sea: [0.28, 0.07, 242],
   sand: [0.6, 0.04, 80],
   zenith: [0.62, 0.09, 245],
   horizon: [0.86, 0.04, 220],
   ocean: [0.52, 0.09, 240],
   beach: [0.72, 0.04, 80],
-  text: [0.89, 0.014, 230],
-  comment: [0.64, 0.03, 250],
-  keyword: [0.83, 0.062, 215],
-  func: [0.77, 0.085, 252],
-  string: [0.82, 0.07, 162],
-  number: [0.79, 0.06, 40],
-  type: [0.85, 0.058, 86],
-  param: [0.85, 0.034, 30],
+  text: [0.95, 0.01, 230],
+  comment: [0.75, 0.03, 245],
+  keyword: [0.86, 0.07, 312],
+  func: [0.85, 0.07, 232],
+  string: [0.87, 0.08, 152],
+  number: [0.84, 0.07, 45],
+  type: [0.9, 0.075, 90],
+  param: [0.9, 0.034, 30],
 });
 
-/** Midday: clear ocean blue, soft cyan, bright coastal air. Still a dark room. */
+/** Midday: a clear blue sky. Every syntax color is a pale tint floating on it. */
 export const DAY = mood({
-  room: [0.265, 0.04, 240],
-  sky: [0.72, 0.085, 225],
-  glow: [0.93, 0.035, 95],
-  sea: [0.32, 0.075, 238],
+  room: [0.4, 0.085, 240],
+  sky: [0.86, 0.07, 212],
+  glow: [0.96, 0.035, 95],
+  sea: [0.33, 0.09, 242],
   sand: [0.66, 0.045, 82],
   zenith: [0.62, 0.11, 245],
   horizon: [0.86, 0.05, 215],
   ocean: [0.5, 0.1, 235],
   beach: [0.8, 0.045, 85],
-  text: [0.9, 0.012, 230],
-  comment: [0.66, 0.03, 240], // soft gray-blue
-  keyword: [0.84, 0.065, 200], // clear, muted cyan
-  func: [0.77, 0.09, 252], // ocean blue
-  string: [0.83, 0.08, 158], // sea green
-  number: [0.75, 0.075, 290], // slightly warm blue
-  type: [0.86, 0.065, 88], // sand in sunlight
-  param: [0.86, 0.034, 35],
+  text: [0.97, 0.008, 240], // cloud white
+  comment: [0.8, 0.03, 235], // pale gray-blue
+  keyword: [0.89, 0.07, 305], // pale lilac
+  func: [0.89, 0.065, 222], // ice blue
+  string: [0.91, 0.09, 150], // pale sea green
+  number: [0.86, 0.08, 45], // sunlit peach
+  type: [0.94, 0.09, 95], // sunlight yellow
+  param: [0.93, 0.035, 25],
 });
 
-/** Sun ~20° and sinking: the blue slowly warms. */
+/** Sun ~20° and sinking: the blue sky slowly warms. */
 export const AFTERNOON = mood({
-  room: [0.255, 0.034, 248],
-  sky: [0.72, 0.07, 240],
-  glow: [0.91, 0.06, 85],
-  sea: [0.305, 0.065, 242],
+  room: [0.37, 0.072, 244],
+  sky: [0.84, 0.065, 222],
+  glow: [0.94, 0.06, 85],
+  sea: [0.31, 0.08, 244],
   sand: [0.64, 0.05, 76],
   zenith: [0.62, 0.09, 250],
   horizon: [0.85, 0.05, 85],
   ocean: [0.5, 0.085, 240],
   beach: [0.78, 0.05, 80],
-  text: [0.895, 0.014, 70],
-  comment: [0.65, 0.03, 255],
-  keyword: [0.83, 0.062, 215],
-  func: [0.77, 0.085, 255],
-  string: [0.83, 0.075, 155],
-  number: [0.78, 0.065, 330],
-  type: [0.85, 0.065, 82],
-  param: [0.855, 0.034, 30],
+  text: [0.96, 0.012, 70],
+  comment: [0.78, 0.03, 250],
+  keyword: [0.88, 0.07, 305],
+  func: [0.87, 0.065, 230],
+  string: [0.9, 0.085, 148],
+  number: [0.86, 0.08, 50],
+  type: [0.93, 0.085, 90],
+  param: [0.92, 0.036, 30],
 });
 
 /** Sun ~7°: blue water, gold light. */
 export const GOLDEN = mood({
-  room: [0.24, 0.026, 262],
-  sky: [0.74, 0.08, 78],
+  room: [0.27, 0.035, 258],
+  sky: [0.76, 0.08, 78],
   glow: [0.85, 0.1, 75],
   sea: [0.28, 0.055, 250],
   sand: [0.6, 0.065, 70],

@@ -18,7 +18,7 @@ import {
   withLightness,
 } from './color';
 import { BASE, KEYFRAMES, Palette, Role, mixPalettes } from './moods';
-import { dayPhase, nightness as nightnessOf } from './phase';
+import { dayPhase, nightness as nightnessOf, smoothstep } from './phase';
 import type { Sky } from './sky';
 
 export interface AtmosphereOptions {
@@ -189,29 +189,61 @@ function tasteModifier(p: Palette, opts: AtmosphereOptions, night: number): Pale
   return out;
 }
 
+/**
+ * Minimum WCAG contrast per role. In the dark hours the bar is high; under
+ * the bright midday sky it eases toward AA-plus, because nothing can reach
+ * 9:1 against a blue sky. Comments stay at AA (4.5:1) at every hour.
+ */
+const MIN_CONTRAST = {
+  text: [9, 7],
+  comment: [4.5, 4.5],
+  keyword: [6, 5],
+  func: [6, 5],
+  string: [6, 5],
+  number: [5.5, 4.8],
+  type: [6.5, 5.5],
+  param: [7, 5.5],
+  property: [7, 5.5],
+  punct: [5, 4.5],
+  operator: [5, 4.5],
+  escape: [6, 5],
+} as const satisfies Record<string, readonly [dark: number, bright: number]>;
+
+export type GuardedRole = keyof typeof MIN_CONTRAST;
+
+/** 0 for a dark room, 1 for the full midday sky. */
+function brightness(room: Lab): number {
+  return smoothstep(0.27, 0.4, room.L);
+}
+
+export function minContrast(role: GuardedRole, room: Lab): number {
+  const [dark, bright] = MIN_CONTRAST[role];
+  return dark + (bright - dark) * brightness(room);
+}
+
 /** Derived roles, then the readability guard. */
 function finalize(p: Palette): FinalPalette {
   // Measure against a background slightly lighter than the editor, which
   // covers hovers, the current-line highlight and widgets.
-  const ref = lighten(p.room, 0.03);
-  const guard = (c: Lab, min: number) => ensureContrast(c, ref, min);
+  const ref = lighten(p.room, 0.03 - 0.02 * brightness(p.room));
+  const guard = (c: Lab, role: GuardedRole) => ensureContrast(c, ref, minContrast(role, p.room));
 
-  const text = guard(p.text, 9);
-  const comment = guard(p.comment, 4.5);
+  const text = guard(p.text, 'text');
+  const comment = guard(p.comment, 'comment');
   return {
     ...p,
     text,
     comment,
-    keyword: guard(p.keyword, 6),
-    func: guard(p.func, 6),
-    string: guard(p.string, 6),
-    number: guard(p.number, 5.5),
-    type: guard(p.type, 6.5),
-    param: guard(p.param, 7),
-    property: guard(mix(text, p.func, 0.35), 7),
-    punct: guard(mix(text, comment, 0.55), 5),
-    operator: guard(mix(mix(text, comment, 0.55), p.keyword, 0.35), 5),
-    escape: guard(lighten(rotateHue(p.string, 32), 0.02), 6),
+    keyword: guard(p.keyword, 'keyword'),
+    func: guard(p.func, 'func'),
+    string: guard(p.string, 'string'),
+    number: guard(p.number, 'number'),
+    type: guard(p.type, 'type'),
+    param: guard(p.param, 'param'),
+    property: guard(mix(text, p.func, 0.35), 'property'),
+    punct: guard(mix(text, comment, 0.55), 'punct'),
+    operator: guard(mix(mix(text, comment, 0.55), p.keyword, 0.35), 'operator'),
+    escape: guard(lighten(rotateHue(p.string, 32), 0.02), 'escape'),
   };
 }
 

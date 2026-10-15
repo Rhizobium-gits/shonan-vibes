@@ -70,7 +70,7 @@ export async function run(): Promise<void> {
     await until('noon colors', () => block('workbench.colorCustomizations')?.['editor.background'] !== night);
     const noon = block('workbench.colorCustomizations')!['editor.background'] as string;
     assert.ok(luminance(noon) > luminance(night), `noon ${noon} lighter than night ${night}`);
-    assert.ok(luminance(noon) < 60, `noon ${noon} is still a dark room`);
+    assert.ok(luminance(noon) > luminance(night) + 30, `noon ${noon} is a blue sky`);
     assert.equal(block('workbench.colorCustomizations')!['myExtension.color'], '#ff00ff');
     step(`follows the held time (12:00 → ${noon}) and keeps the user's own entries`);
 
@@ -81,7 +81,13 @@ export async function run(): Promise<void> {
     step('opens the Shoreline editor tab');
 
     await config().update('shonanVibes.dynamicColors', false, G);
-    await until('overrides removed', () => block('workbench.colorCustomizations')?.['editor.background'] === undefined);
+    await until(
+      'overrides removed',
+      () =>
+        block('workbench.colorCustomizations')?.['editor.background'] === undefined &&
+        block('editor.tokenColorCustomizations') === undefined &&
+        block('editor.semanticTokenColorCustomizations') === undefined,
+    );
     assert.deepEqual(block('workbench.colorCustomizations'), { 'myExtension.color': '#ff00ff' });
     assert.equal(block('editor.tokenColorCustomizations'), undefined);
     assert.equal(block('editor.semanticTokenColorCustomizations'), undefined);

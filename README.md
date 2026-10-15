@@ -2,7 +2,7 @@
 
 **One theme. One coastline. One day.**
 
-A quiet dark theme for VS Code that follows the light of the Shonan coast. The colors move with the sun: moonlit navy after midnight, violet and pale pink at dawn, clear ocean blue at noon, gold and coral at sunset, then back into the night. The changes are slow enough that you won't see them happen. You'll just notice, now and then, that the light is different.
+A quiet theme for VS Code that follows the light of the Shonan coast. The colors move with the sun: moonlit navy after midnight, violet and pale pink at dawn, an open blue sky at noon, gold and coral at sunset, then back into the night. The changes are slow enough that you won't see them happen. You'll just notice, now and then, that the light is different.
 
 ![The editor's colors through one day on the Shonan coast, from midnight to midnight](media/screenshots/day-ribbon.png)
 
@@ -15,7 +15,7 @@ A quiet dark theme for VS Code that follows the light of the Shonan coast. The c
 | ![Shonan Vibes at 01:40, deep night](media/screenshots/night.png) | ![Shonan Vibes at 05:52, sunrise](media/screenshots/sunrise.png) |
 | **01:40 · Night.** Black, navy, moonlight. | **05:52 · Sunrise.** Peach light enters the room. |
 | ![Shonan Vibes at 11:30, midday](media/screenshots/day.png) | ![Shonan Vibes at 16:35, golden hour](media/screenshots/golden-hour.png) |
-| **11:30 · Day.** Clear ocean blue, still a dark room. | **16:35 · Golden hour.** The blue warms. |
+| **11:30 · Day.** An open blue sky; code floats on it in pale tints. | **16:35 · Golden hour.** The blue warms. |
 | ![Shonan Vibes at 17:06, sunset](media/screenshots/sunset.png) | ![Shonan Vibes at 17:38, twilight](media/screenshots/twilight.png) |
 | **17:06 · Sunset.** Coral on the horizon line. | **17:38 · Twilight.** Violet, then indigo. |
 
@@ -23,11 +23,11 @@ A quiet dark theme for VS Code that follows the light of the Shonan coast. The c
 
 ## What it is
 
-- **A dark theme first.** The editor background stays dark all day, like looking at a bright sea from inside a dim room. It never turns into a light theme.
+- **Night is dark, noon is a blue sky.** After dark the editor is deep navy. Through the morning it opens into a clear sky blue, and the syntax colors become pale tints (lilac, ice blue, green, peach, sunlight yellow) that float on it. Text always stays light, so it never becomes a white light theme.
 - **Driven by the sun, not the clock.** Shonan Vibes computes the sun's real altitude for today (NOAA algorithm, offline). So the June sunset at 18:58 and the December sunset at 16:32 get the same colors, at the right time.
 - **Continuous.** There are no theme switches. Twelve moods (night, blue hour, dawn, sunrise, morning, day, afternoon, golden hour, sunset, afterglow, twilight, dusk) are blended continuously in OKLab, a perceptual color space, with easing. No color changes by more than half a just-noticeable difference per minute.
 - **Stable meaning.** Keywords, functions, strings, numbers, types and comments each keep their color family all day; only the light falling on them changes. Numbers, for example, are a muted blue at night, soft peach at sunrise and soft orange at sunset.
-- **Readable at every hour.** A contrast guard runs last on every color. Text stays at or above 9:1, syntax colors above 5.5:1 and comments above 4.5:1 (WCAG AA), for every hour of the year and every setting combination. The test suite checks this.
+- **Readable at every hour.** A contrast guard runs last on every color. Text stays at or above 9:1 in the dark hours and 7:1 under the midday sky, and every syntax color, comments included, stays at or above WCAG AA (4.5:1), for every hour of the year and every setting combination. The test suite checks this.
 - **Calm.** Chroma is capped low. Nothing is neon, and there are no animations in the editor.
 
 ## The shoreline

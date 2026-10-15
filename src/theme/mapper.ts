@@ -6,7 +6,8 @@
  * so both are always the same theme.
  *
  * Visual language
- *   abyss < shade < room < raised < mist   (surfaces, darkest to lightest)
+ *   abyss < shade < room < raised < mist   (surfaces, darkest to lightest;
+ *                                           a dark room at night, a blue sky at noon)
  *   title & activity bar = abyss · side bar, tabs, panel = shade
  *   editor = room · widgets & menus = mist
  *   glow  = light itself: cursor, active tab sliver, horizon line, find
@@ -115,7 +116,8 @@ function workbenchColors(p: FinalPalette, opts: ThemeOptions): Record<string, st
 
   const accent = p.sky;
   const accentInk = ensureContrast(accent, shade, 4.8);
-  const button = scaleChroma(withLightness(accent, 0.44), 0.85);
+  // Muted sky-colored buttons in the dark; deep ocean-blue ones under the midday sky.
+  const button = scaleChroma(withLightness(accent, 0.44 - 1.4 * Math.max(0, room.L - 0.3)), 0.85);
   const buttonFg = ensureContrast(text, button, 4.5);
   const glow = p.glow;
   const cursor = ensureContrast(glow, room, 4.5);
