@@ -23,7 +23,17 @@ export interface SceneFrame {
   nightness: number;
   cloudCover: number;
   sun: { altitude: number; azimuth: number; rising: boolean };
-  moon: { altitude: number; azimuth: number; phase: number; illumination: number };
+  moon: {
+    altitude: number;
+    azimuth: number;
+    phase: number;
+    illumination: number;
+    elongation: number;
+    /** Bright limb, degrees anticlockwise from straight up. */
+    limb: number;
+  };
+  /** For turning the stars: local sidereal time (degrees) and latitude. */
+  stars: { siderealTime: number; latitude: number };
   /** The editor palette, as the user sees it (intensity applied). */
   colors: Record<string, string>;
   /** The coast itself, always at full intensity. */
@@ -57,12 +67,8 @@ export function sceneFrame(
     nightness: scene.nightness,
     cloudCover,
     sun: { altitude: sky.sun.altitude, azimuth: sky.sun.azimuth, rising: sky.sun.rising },
-    moon: {
-      altitude: sky.moon.altitude,
-      azimuth: sky.moon.azimuth,
-      phase: sky.moon.phase,
-      illumination: sky.moon.illumination,
-    },
+    moon: { ...sky.moon },
+    stars: { siderealTime: sky.siderealTime, latitude: sky.latitude },
     colors: hexPalette(editor.palette),
     scene: hexPalette(scene.palette),
   };

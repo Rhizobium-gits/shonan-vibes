@@ -18,6 +18,7 @@ import {
   dailyExtremes,
   horizontal,
   moonPosition,
+  siderealTime,
   sunEvents,
   sunPosition,
   wrap180,
@@ -59,6 +60,9 @@ export interface Sky {
   sceneTime: number;
   /** 1..366, for seasonal tints. */
   dayOfYear: number;
+  /** Local sidereal time in degrees, for turning the stars. */
+  siderealTime: number;
+  latitude: number;
 }
 
 export const DEFAULT_SKY: SkyOptions = { ...SHONAN, useLocalTime: true };
@@ -107,11 +111,18 @@ export function skyAt(now: Date, opts: SkyOptions = DEFAULT_SKY): Sky {
       model: 'astronomical',
     };
   }
-  const moon = moonPosition(sceneTime, opts.latitude, {
-    ...pos,
-    hourAngle: sun.hourAngle,
-  });
-  return { sun, moon, sceneTime, dayOfYear: dayOfYear(sceneTime) };
+  // The moon and stars keep their real places relative to the sun: with a
+  // manual sun curve they are shifted by the same amount the sun was.
+  const skyTime = sceneTime + (wrap180(sun.hourAngle - pos.hourAngle) / 15) * 3_600_000;
+  const moon = moonPosition(skyTime, opts.latitude, opts.longitude);
+  return {
+    sun,
+    moon,
+    sceneTime,
+    dayOfYear: dayOfYear(sceneTime),
+    siderealTime: siderealTime(skyTime, opts.longitude),
+    latitude: opts.latitude,
+  };
 }
 
 /**

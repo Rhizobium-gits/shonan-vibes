@@ -51,11 +51,17 @@
     for (const group of ['colors', 'scene']) {
       for (const k of Object.keys(a[group])) out[group][k] = lerpHex(a[group][k], b[group][k], t);
     }
-    out.nightness = a.nightness + (b.nightness - a.nightness) * t;
-    out.sun.altitude = a.sun.altitude + (b.sun.altitude - a.sun.altitude) * t;
-    out.sun.azimuth = a.sun.azimuth + (b.sun.azimuth - a.sun.azimuth) * t;
-    out.moon.altitude = a.moon.altitude + (b.moon.altitude - a.moon.altitude) * t;
-    out.moon.azimuth = a.moon.azimuth + (b.moon.azimuth - a.moon.azimuth) * t;
+    const lerp = (x, y) => x + (y - x) * t;
+    const turn = (x, y) => x + ((((y - x) % 360) + 540) % 360 - 180) * t; // the short way round
+    out.nightness = lerp(a.nightness, b.nightness);
+    out.sun.altitude = lerp(a.sun.altitude, b.sun.altitude);
+    out.sun.azimuth = turn(a.sun.azimuth, b.sun.azimuth);
+    out.moon.altitude = lerp(a.moon.altitude, b.moon.altitude);
+    out.moon.azimuth = turn(a.moon.azimuth, b.moon.azimuth);
+    out.moon.limb = turn(a.moon.limb, b.moon.limb);
+    out.moon.elongation = lerp(a.moon.elongation, b.moon.elongation);
+    out.moon.illumination = lerp(a.moon.illumination, b.moon.illumination);
+    out.stars.siderealTime = turn(a.stars.siderealTime, b.stars.siderealTime);
     return out;
   }
 
@@ -118,12 +124,16 @@
     return { horizonY, surfY, wetY, dryY, k, u };
   }
 
-  // Facing Enoshima from Koshigoe: the open sea (south) on the left, where
-  // the sun crosses by day; sunsets behind Enoshima, Fuji and Hakone; the
-  // Kamakura shore on the right. The sun's track is widened a little so the
-  // midday sun stays in view.
+  // A panorama from the beach at Koshigoe, east on the left to north-west on
+  // the right (azimuth 55°–345°), so the whole day is in view: the sun and
+  // moon rise over the Miura peninsula, cross the open sea to the south and
+  // set by Enoshima, Fuji and Hakone, or over the Koshigoe hills in summer.
+  // Landmarks sit at their true bearings from the beach.
+  const VIEW_CENTER = 200;
+  const VIEW_HALF = 145;
   function azimuthX(az, W) {
-    return W / 2 + ((az - 250) / 120) * (W / 2);
+    const d = ((((az - VIEW_CENTER) % 360) + 540) % 360) - 180;
+    return W / 2 + (d / VIEW_HALF) * (W / 2);
   }
   function altitudeY(alt, horizonY, u) {
     return horizonY - 1 - Math.pow(clamp01(alt / 70), 0.75) * (horizonY - 6 * u);
@@ -134,6 +144,8 @@
   // ------------------------------------------------------------------------
 
   const WARM_LIGHT = [255, 206, 140];
+  const RAD = Math.PI / 180;
+  const STAR_COUNT = 520;
 
   function draw() {
     if (!frame || !resize()) return;
@@ -181,7 +193,7 @@
     const sunUp = alt > -1.5;
     const sunX = azimuthX(frame.sun.azimuth, W);
     const sunY = altitudeY(alt, horizonY, u);
-    const moonUp = frame.moon.altitude > 0 && frame.moon.illumination > 0.04;
+    const moonUp = frame.moon.altitude > -1 && frame.moon.illumination > 0.02;
     const moonX = azimuthX(frame.moon.azimuth, W);
     const moonY = altitudeY(frame.moon.altitude, horizonY, u);
     const lowSun = sunUp ? 1 - clamp01(alt / 35) : 0;
@@ -206,34 +218,56 @@
     }
 
     // --- Stars
+    // A fixed starfield on the celestial sphere, turned by the sidereal time:
+    // stars rise on the left, wheel across the south and set on the right.
     if (night > 0.05) {
       const r = rng(7);
-      const count = Math.round((W * horizonY) / (55 * k * k));
       const star = [222, 230, 242];
-      for (let i = 0; i < count; i++) {
-        const x = Math.floor(r() * W);
-        const y = Math.floor(Math.pow(r(), 1.3) * (horizonY - 10 * u));
-        const b = 0.2 + r() * 0.5;
+      const lat = frame.stars.latitude * RAD;
+      const lst = frame.stars.siderealTime;
+      for (let i = 0; i < STAR_COUNT; i++) {
+        const ra = r() * 360;
+        const dec = Math.asin(r() * 1.8 - 0.8);
+        const b = 0.15 + Math.pow(r(), 2.2) * 0.65;
+        const H = (lst - ra) * RAD;
+        const sinAlt = Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(H);
+        const sAlt = Math.asin(sinAlt) / RAD;
+        if (sAlt <= 0.5) continue;
+        const sAz = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(lat) - Math.tan(dec) * Math.cos(lat)) / RAD + 180;
+        const x = azimuthX(sAz, W);
+        if (x < 0 || x >= W) continue;
+        const y = altitudeY(sAlt, horizonY, u);
+        const haze = clamp01(sAlt / 12);
         const twinkle = t && hash(i, 1, Math.floor(t / 3)) < 0.12 ? 0.45 : 1;
-        blend(x, y, star, b * night * (1 - clouds * 0.8) * twinkle);
+        blend(x, y, star, b * night * haze * (1 - clouds * 0.8) * twinkle);
       }
     }
 
-    // --- Moon, in its real phase
+    // --- Moon: real phase, its lit side turned toward the sun. By day it is a
+    // faint ghost (as the real daytime moon is); near new moon, or close to
+    // the sun, it cannot be seen at all.
     if (moonUp) {
       const rad = 4.2 * k;
-      const kk = Math.cos(2 * Math.PI * frame.moon.phase);
-      const waxing = frame.moon.phase < 0.5;
+      const m = frame.moon;
+      const limb = m.limb * RAD;
+      const bx = -Math.sin(limb); // bright-limb direction on screen (y down)
+      const by = -Math.cos(limb);
+      const threshold = 1 - 2 * m.illumination;
       const moonLight = [236, 240, 246];
-      const vis = 0.35 + 0.65 * Math.max(night, 1 - daylight);
+      const skyBright = clamp01((alt + 6) / 14);
+      const glare = clamp01((m.elongation - 10) / 12);
+      const vis = glare * (0.12 + 0.88 * (1 - skyBright));
       const R = Math.ceil(rad) + 1;
       for (let dy = -R; dy <= R; dy++) {
         for (let dx = -R; dx <= R; dx++) {
           if (dx * dx + dy * dy > rad * rad) continue;
-          const half = Math.sqrt(Math.max(0.0001, rad * rad - dy * dy));
-          const xn = dx / half;
-          const lit = waxing ? xn > kk : xn < -kk;
-          blend(moonX + dx, moonY + dy, lit ? moonLight : mix(zenith, moonLight, 0.08), lit ? vis : vis * 0.5);
+          const along = dx * bx + dy * by;
+          const across = -dx * by + dy * bx;
+          const half = Math.sqrt(Math.max(0.0001, rad * rad - across * across));
+          const lit = along / half > threshold;
+          // Earthshine: the dark part is only just there, and only at night.
+          if (lit) blend(moonX + dx, moonY + dy, moonLight, vis);
+          else blend(moonX + dx, moonY + dy, mix(zenith, moonLight, 0.1), vis * 0.35 * (1 - skyBright));
         }
       }
     }
@@ -283,16 +317,21 @@
       }
     }
 
-    // --- Distant land along the horizon (Izu, Hakone) and Fuji just right of
-    // Enoshima, as seen from Koshigoe. Lost in haze by day, a band at dusk.
+    // --- Distant land: Izu and Hakone behind Enoshima with Fuji just beyond
+    // it (west), and the low Miura peninsula far to the east. Lost in haze by
+    // day, a band at dusk.
     const farLand = mix(horizonSky, mix(zenith, ocean, 0.5), 0.3 + 0.45 * (1 - daylight));
     const farAlpha = 0.28 + 0.5 * (1 - daylight * 0.75);
-    for (let x = 0; x < Math.round(W * 0.74); x++) {
+    for (let x = 0; x < W; x++) {
       const v = x / W;
-      let h = (1.2 + 0.8 * Math.sin(v * 23 + 0.4) + 0.6 * Math.sin(v * 61)) * u;
-      const fuji = Math.max(0, 1 - Math.abs(v - 0.585) / 0.06);
-      h = Math.max(h, (Math.pow(fuji, 1.25) * 8 + 1) * u * (fuji > 0 ? 1 : 0));
-      h *= clamp01((0.74 - v) / 0.04);
+      let h = 0;
+      if (v > 0.55 && v < 0.86) {
+        h = (1.2 + 0.8 * Math.sin(v * 23 + 0.4) + 0.6 * Math.sin(v * 61)) * u;
+        h *= clamp01((v - 0.55) / 0.04) * clamp01((0.86 - v) / 0.03);
+        const fuji = Math.max(0, 1 - Math.abs(v - 0.776) / 0.055);
+        if (fuji > 0) h = Math.max(h, (Math.pow(fuji, 1.25) * 8 + 1) * u);
+      }
+      if (v < 0.24) h = Math.max(h, (0.9 + 0.6 * Math.sin(v * 40) + 0.4 * Math.sin(v * 97)) * u * clamp01((0.24 - v) / 0.05));
       for (let y = 0; y < h; y++) blend(x, horizonY - 1 - y, farLand, farAlpha);
     }
 
@@ -332,9 +371,10 @@
       Math.max(0.4 * night, 0.45 * lowWarm * (1 - daylight * 0.5)),
     );
     const canopyLit = mix(isle, lift(horizonSky, 0.1), 0.16 * daylight + 0.1 * lowWarm);
-    const ix0 = Math.round(W * 0.3);
-    const ix1 = Math.round(W * 0.545);
-    const top = 8 * u;
+    const ix0 = Math.round(W * 0.585);
+    const ix1 = Math.round(W * 0.745);
+    const coastX = Math.round(W * 0.835);
+    const top = 6.5 * u;
     // Profile traced from the photograph: [position across the island, height].
     const PROFILE = [
       [0, 0.06], [0.08, 0.1], [0.11, 0.86], [0.14, 0.98], [0.26, 0.95], [0.36, 0.99],
@@ -361,15 +401,15 @@
       for (let y = 0; y < h; y++) set(x, horizonY - 1 - y, y >= h - Math.max(1, Math.round(u * 0.5)) ? canopyLit : isle);
     });
     // Low land at both ends: the spit on the left, the harbor and causeway on the right.
-    for (let x = ix0 - Math.round(W * 0.03); x < Math.round(W * 0.72); x++) {
+    for (let x = ix0 - Math.round(W * 0.02); x < coastX; x++) {
       if (x >= ix0 && x <= ix1) continue;
-      const h = x < ix0 ? Math.round(0.6 * u) : Math.max(1, Math.round(0.5 * u * (1 - (x - ix1) / (W * 0.18))));
+      const h = x < ix0 ? Math.round(0.6 * u) : Math.max(1, Math.round(0.5 * u * (1 - (x - ix1) / (coastX - ix1))));
       for (let y = 0; y < h; y++) set(x, horizonY - 1 - y, isle);
     }
     // The Sea Candle: tapered tower, a lit observation deck, the lantern.
     const tx = Math.round(ix0 + (ix1 - ix0) * 0.44);
     const baseY = horizonY - 1 - (heights[tx - ix0] || 0);
-    const towerH = Math.round(4.6 * u);
+    const towerH = Math.round(4 * u);
     const towerCol = mix(isle, lift(horizonSky, 0.25), 0.22 + 0.3 * daylight);
     for (let y = 0; y < towerH; y++) {
       const w = Math.max(1, Math.round((1.9 - 0.8 * (y / towerH)) * k));
@@ -394,14 +434,14 @@
       }
       // The lit band at the foot of the tower, a few lights on the hillside.
       for (let x = -1; x <= 1; x++) blend(tx + x, baseY - Math.round(0.4 * u), WARM_LIGHT, 0.8 * lights);
-      for (let x = ix0 + Math.round(W * 0.03); x < ix1 - Math.round(W * 0.03); x++) {
+      for (let x = ix0 + Math.round(W * 0.02); x < ix1 - Math.round(W * 0.02); x++) {
         if (hash(x, 13, 131) < 0.035) {
           const h = heights[x - ix0];
           blend(x, horizonY - 1 - Math.round(h * (0.35 + 0.4 * hash(x, 14, 137))), [236, 236, 228], 0.7 * lights);
         }
       }
       // Lights along the foot of the island and the causeway, mirrored on the sea.
-      for (let x = ix0 - Math.round(W * 0.03); x < Math.round(W * 0.72); x++) {
+      for (let x = ix0 - Math.round(W * 0.02); x < coastX; x++) {
         const onIsland = x >= ix0 && x <= ix1;
         if (hash(x, 3, 67) > (onIsland ? 0.3 : 0.12)) continue;
         const ly = horizonY - 1 - (onIsland ? Math.floor(hash(x, 4, 71) * 1.6 * u) : 0);
@@ -416,7 +456,7 @@
     // --- Koshigoe on the right: the seawall, the green harbor light,
     // apartment blocks with lit windows, and the hill rising to Kamakura.
     {
-      const x0 = Math.round(W * 0.705);
+      const x0 = coastX;
       // By day: wooded hill, white-beige blocks, grey seawall, a little haze.
       // From sunset on they become silhouettes.
       const f = clamp01(1 - daylight * 1.15);
@@ -459,7 +499,7 @@
           if (i % Math.round(7 * k) === 0) blend(x, base - 1, WARM_LIGHT, lights);
         });
         // The green harbor light, and its long reflection.
-        const gx = Math.round(W * 0.785);
+        const gx = Math.round(x0 + 0.27 * (W - x0));
         const gy = shore(gx) - Math.round(4.2 * u);
         const green = [70, 232, 150];
         const R = Math.ceil(2.6 * k);
@@ -477,7 +517,7 @@
         }
       }
       // The light's post, visible by day too.
-      const gx = Math.round(W * 0.785);
+      const gx = Math.round(x0 + 0.27 * (W - x0));
       for (let y = 1; y < Math.round(4 * u); y++) set(gx, shore(gx) - Math.round(1.5 * u) - y, wall);
     }
 
@@ -485,7 +525,7 @@
     if (night < 0.6) {
       const sa = 0.7 * (1 - night);
       const figure = mix(isle, [20, 24, 34], 0.4);
-      for (const [fx, tall] of [[0.18, 2.4], [0.195, 2.1]]) {
+      for (const [fx, tall] of [[0.36, 2.4], [0.375, 2.1]]) {
         const x = Math.round(W * fx);
         const y = horizonY + Math.round(5 * u);
         for (let j = 0; j < Math.round(tall * u); j++) for (let w = 0; w < Math.max(1, Math.round(0.6 * k)); w++) blend(x + w, y - j, figure, sa);

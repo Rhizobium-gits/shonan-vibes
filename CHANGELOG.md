@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- The sun and moon follow the real sky. The Shoreline is now a panorama from east to north-west, so the sun rises over the Miura peninsula, crosses the open sea and sets by Enoshima and Fuji (or over the Koshigoe hills in summer).
+- The moon is computed from a lunar theory: it rises and sets at its true times, shows its real phase for the day (crescent, half, gibbous, full), and turns its lit side toward the sun. By day it is a faint ghost; near new moon, or close to the sun, it is not shown.
+- The stars sit on the celestial sphere and wheel across the sky with the sidereal time.
+- Landmarks are placed at their true bearings from the beach at Koshigoe.
+
 ## 0.4.0
 
 - Shoreline redrawn after a real photograph, from Koshigoe on the Kamakura side: Enoshima's true profile (a sheer cliff, a flat wooded top with the Sea Candle, a long slope toward the causeway), Fuji just beyond it, the line of lights along the causeway, the Koshigoe shore with apartment blocks and the green harbor light, concrete breakwaters in the foreground, two surfers by day, and a calmer, silvery sea.

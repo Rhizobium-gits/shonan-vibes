@@ -94,6 +94,41 @@ describe('sun', () => {
   });
 });
 
+describe('moon', () => {
+  const at = (iso: string) => skyAt(new Date(iso), SHONAN_REAL).moon;
+
+  it('is new at the 2026-08-12 solar eclipse and full at the 2026-08-28 lunar eclipse', () => {
+    const solar = at('2026-08-12T17:46:00Z');
+    assert.ok(solar.illumination < 0.01 && solar.elongation < 3, JSON.stringify(solar));
+    const lunar = at('2026-08-28T04:13:00Z');
+    assert.ok(lunar.illumination > 0.99 && lunar.elongation > 177, JSON.stringify(lunar));
+  });
+
+  it('changes shape from day to day', () => {
+    const quarter = at('2026-10-18T16:13:00Z');
+    assert.ok(Math.abs(quarter.illumination - 0.5) < 0.03, `first quarter ${quarter.illumination}`);
+    assert.ok(at('2026-10-15T09:00:00Z').illumination < at('2026-10-16T09:00:00Z').illumination, 'waxing');
+  });
+
+  it('rises in the east at sunset when full, and sets in the west at dawn', () => {
+    const rising = at('2026-10-26T08:40:00Z'); // 17:40 JST
+    assert.ok(rising.altitude > 3 && rising.altitude < 20 && rising.azimuth > 60 && rising.azimuth < 100);
+    const midnight = at('2026-10-26T14:40:00Z'); // 23:40 JST, high in the south
+    assert.ok(midnight.altitude > 60 && Math.abs(midnight.azimuth - 180) < 15);
+    const setting = at('2026-10-26T20:45:00Z'); // 05:45 JST
+    assert.ok(setting.azimuth > 260 && setting.azimuth < 300 && setting.altitude < 20);
+    const sun = skyAt(new Date('2026-10-26T14:40:00Z'), SHONAN_REAL).sun;
+    assert.ok(sun.altitude < -50, 'the full moon and the sun do not share the sky');
+  });
+
+  it('turns its lit side toward the sun', () => {
+    // Evening crescent in the south-west: the sun has set to its lower right.
+    const m = at('2026-10-15T09:00:00Z');
+    const dir = { x: -Math.sin((m.limb * Math.PI) / 180), y: -Math.cos((m.limb * Math.PI) / 180) };
+    assert.ok(dir.x > 0.5 && dir.y > 0, `bright limb points ${JSON.stringify(dir)}`);
+  });
+});
+
 describe('atmosphere', () => {
   it('never jumps: each minute changes every color by less than half a JND', () => {
     for (const intensity of [1, 0.5]) {

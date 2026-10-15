@@ -5,9 +5,11 @@
  * Algorithms"), accurate to well under a minute of sunrise/sunset time for
  * the years anyone will be coding in. No network, no tables.
  *
- * The moon is a deliberately light approximation (phase from the synodic
- * month, position from the phase angle). It only decorates the Shoreline
- * view; colors never depend on it.
+ * The moon follows a low-precision lunar theory (the main terms of the
+ * moon's longitude, latitude and distance, as in Meeus and suncalc), good to
+ * well under a degree: it rises, crosses the sky and sets on the right day
+ * and hour, with its real phase and the real tilt of its lit side. It only
+ * decorates the Shoreline view; colors never depend on it.
  */
 
 const RAD = Math.PI / 180;
@@ -30,12 +32,21 @@ export interface SunPosition {
 }
 
 export interface MoonPosition {
+  /** Degrees above the horizon, as seen from the surface (parallax, refraction). */
   altitude: number;
+  /** Degrees clockwise from north. */
   azimuth: number;
   /** 0 = new, 0.25 = first quarter, 0.5 = full, 0.75 = last quarter. */
   phase: number;
   /** Illuminated fraction of the disc, 0..1. */
   illumination: number;
+  /** Angular distance from the sun, degrees. */
+  elongation: number;
+  /**
+   * Direction of the bright limb as the observer sees it: degrees
+   * anticlockwise from straight up (the lit side always faces the sun).
+   */
+  limb: number;
 }
 
 export function julianDay(ms: number): number {
@@ -103,22 +114,71 @@ export function dailyExtremes(declination: number, latitude: number): { noon: nu
   };
 }
 
-export function moonPhase(ms: number): number {
-  const p = (julianDay(ms) - 2451550.1) / 29.530588853;
-  return p - Math.floor(p);
+const OBLIQUITY = 23.4397 * RAD;
+
+function toEquatorial(l: number, b: number): { ra: number; dec: number } {
+  return {
+    ra: Math.atan2(Math.sin(l) * Math.cos(OBLIQUITY) - Math.tan(b) * Math.sin(OBLIQUITY), Math.cos(l)),
+    dec: Math.asin(Math.sin(b) * Math.cos(OBLIQUITY) + Math.cos(b) * Math.sin(OBLIQUITY) * Math.sin(l)),
+  };
 }
 
-/**
- * Approximate moon: it trails the sun by `phase` of a day and sits roughly
- * opposite the sun's declination when full. Good to a few degrees, which is
- * all a sixteen-pixel moon needs.
- */
-export function moonPosition(ms: number, latitude: number, sun: SunPosition): MoonPosition {
-  const phase = moonPhase(ms);
-  const hourAngle = wrap180(sun.hourAngle - 360 * phase);
-  const declination = sun.declination * Math.cos(2 * Math.PI * phase);
-  const { altitude, azimuth } = horizontal(hourAngle, declination, latitude);
-  return { altitude, azimuth, phase, illumination: (1 - Math.cos(2 * Math.PI * phase)) / 2 };
+/** Local sidereal time in degrees: how far the sky has turned. */
+export function siderealTime(ms: number, longitude: number): number {
+  const d = julianDay(ms) - 2451545;
+  return (((280.16 + 360.9856235 * d + longitude) % 360) + 360) % 360;
+}
+
+function sunEquatorial(d: number): { ra: number; dec: number } {
+  const M = (357.5291 + 0.98560028 * d) * RAD;
+  const C = (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M)) * RAD;
+  return toEquatorial(M + C + 102.9372 * RAD + Math.PI, 0);
+}
+
+function moonEquatorial(d: number): { ra: number; dec: number; dist: number } {
+  const L = (218.316 + 13.176396 * d) * RAD; // mean longitude
+  const M = (134.963 + 13.064993 * d) * RAD; // mean anomaly
+  const F = (93.272 + 13.22935 * d) * RAD; // mean distance from the node
+  const lon = L + 6.289 * RAD * Math.sin(M);
+  const lat = 5.128 * RAD * Math.sin(F);
+  return { ...toEquatorial(lon, lat), dist: 385001 - 20905 * Math.cos(M) };
+}
+
+function refraction(h: number): number {
+  const a = Math.max(h, 0);
+  return 0.0002967 / Math.tan(a + 0.00312536 / (a + 0.08901179));
+}
+
+export function moonPosition(ms: number, latitude: number, longitude: number): MoonPosition {
+  const d = julianDay(ms) - 2451545;
+  const m = moonEquatorial(d);
+  const s = sunEquatorial(d);
+  const phi = latitude * RAD;
+  const H = siderealTime(ms, longitude) * RAD - m.ra;
+
+  let alt = Math.asin(Math.sin(phi) * Math.sin(m.dec) + Math.cos(phi) * Math.cos(m.dec) * Math.cos(H));
+  alt -= Math.asin(6378.14 / m.dist) * Math.cos(alt); // seen from the surface, not the earth's center
+  alt += refraction(alt);
+  const az = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(m.dec) * Math.cos(phi)) / RAD + 180;
+  const parallactic = Math.atan2(Math.sin(H), Math.tan(phi) * Math.cos(m.dec) - Math.sin(m.dec) * Math.cos(H));
+
+  const cosEl =
+    Math.sin(s.dec) * Math.sin(m.dec) + Math.cos(s.dec) * Math.cos(m.dec) * Math.cos(s.ra - m.ra);
+  const el = Math.acos(Math.max(-1, Math.min(1, cosEl)));
+  const SUN_DIST = 149598000;
+  const inc = Math.atan2(SUN_DIST * Math.sin(el), m.dist - SUN_DIST * Math.cos(el));
+  const angle = Math.atan2(
+    Math.cos(s.dec) * Math.sin(s.ra - m.ra),
+    Math.sin(s.dec) * Math.cos(m.dec) - Math.cos(s.dec) * Math.sin(m.dec) * Math.cos(s.ra - m.ra),
+  );
+  return {
+    altitude: alt / RAD,
+    azimuth: ((az % 360) + 360) % 360,
+    phase: 0.5 + (0.5 * inc * (angle < 0 ? -1 : 1)) / Math.PI,
+    illumination: (1 + Math.cos(inc)) / 2,
+    elongation: el / RAD,
+    limb: (angle - parallactic) / RAD,
+  };
 }
 
 /**
