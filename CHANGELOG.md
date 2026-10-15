@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1
+
+- The Sea Candle stands taller: about 60 m on a summit about 60 m high, so the visible tower now rises about 0.85 of the island's height.
+
 ## 0.7.0
 
 - Enoshima redrawn in its familiar outline, traced from several photographs taken from the Kamakura side: a sheer cliff with a rounded shoulder, a gently domed wooded crown, the Sea Candle about two thirds across (a slender lattice tower with its observation deck and lantern), a long slope to a small wooded hump, white buildings along the waterline, and the yacht harbor with its masts and little white lighthouse. By day the woods are green and the cliff shows bare rock; from sunset on it is a silhouette.

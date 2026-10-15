@@ -438,11 +438,12 @@
     if (lights > 0.05 && Math.floor(t / 3) % 2 === 0) blend(harborX, horizonY - 1 - lhH, [250, 236, 214], 0.8 * lights);
 
     // The Sea Candle: a slender lattice tower that widens at its observation
-    // deck, with the glass lantern on top. It stands about half the island's
-    // height above the trees.
+    // deck, with the glass lantern on top.
     const tx = Math.round(ix0 + bw * 0.63);
     const baseY = horizonY - 1 - (heights[tx - ix0] || 0);
-    const towerH = Math.round(1.6 * u);
+    // About 60 m on a summit about 60 m high: the visible tower (deck and
+    // lantern included) stands about 0.85 of the island's height.
+    const towerH = Math.round(3.6 * u);
     const towerCol = byDay([168, 174, 176], 0.32); // an open lattice: grey in the haze, not white
     const bodyW = Math.max(1, Math.round(k));
     for (let y = 0; y < towerH; y++) for (let x = 0; x < bodyW; x++) set(tx - (bodyW >> 1) + x, baseY - y, towerCol);
