@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- New extension icon: the full Shonan sunset artwork.
+
 ## 0.1.0
 
 First release.
