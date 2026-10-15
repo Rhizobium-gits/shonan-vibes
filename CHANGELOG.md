@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.2
+
+- The Sea Candle is a little lower again: the visible tower now stands about 0.7 of the island's height, between 0.7.0 and 0.7.1.
+
 ## 0.7.1
 
 - The Sea Candle stands taller: about 60 m on a summit about 60 m high, so the visible tower now rises about 0.85 of the island's height.

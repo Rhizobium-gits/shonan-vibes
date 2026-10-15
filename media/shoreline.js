@@ -441,9 +441,10 @@
     // deck, with the glass lantern on top.
     const tx = Math.round(ix0 + bw * 0.63);
     const baseY = horizonY - 1 - (heights[tx - ix0] || 0);
-    // About 60 m on a summit about 60 m high: the visible tower (deck and
-    // lantern included) stands about 0.85 of the island's height.
-    const towerH = Math.round(3.6 * u);
+    // About 60 m on a summit about 60 m high, its foot hidden in the trees:
+    // the visible tower (deck and lantern included) stands about 0.7 of the
+    // island's height.
+    const towerH = Math.round(2.6 * u);
     const towerCol = byDay([168, 174, 176], 0.32); // an open lattice: grey in the haze, not white
     const bodyW = Math.max(1, Math.round(k));
     for (let y = 0; y < towerH; y++) for (let x = 0; x < bodyW; x++) set(tx - (bodyW >> 1) + x, baseY - y, towerCol);
