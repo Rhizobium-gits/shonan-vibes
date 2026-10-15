@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+- Shoreline drawn at twice the resolution (about 480 pixels across) and recomposed from the beach at Tsujido: Enoshima close on the left with a wooded skyline, the Sea Candle lighthouse and town lights that reflect on the water at dusk and night; a breaking wave with clumped foam and lacy whitewash; wet sand that mirrors the sky; long cloud streaks lit from below at sunrise and sunset; a distant sail by day.
+
 ## 0.2.1
 
 - Shoreline: making the panel taller no longer stretches the picture. Pixels stay square, the sea and beach keep their height, and the extra space becomes more sky (the midday sun climbs higher in a tall panel).
