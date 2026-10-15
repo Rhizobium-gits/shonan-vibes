@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.0
+
+- Enoshima redrawn in its familiar outline, traced from several photographs taken from the Kamakura side: a sheer cliff with a rounded shoulder, a gently domed wooded crown, the Sea Candle about two thirds across (a slender lattice tower with its observation deck and lantern), a long slope to a small wooded hump, white buildings along the waterline, and the yacht harbor with its masts and little white lighthouse. By day the woods are green and the cliff shows bare rock; from sunset on it is a silhouette.
+
 ## 0.6.0
 
 - Today's moon is listed in the Shoreline tab and in the light dot's tooltip: its phase, how much is lit, and when it rises, is highest (due south) and sets. These follow the phase: a new moon is highest around noon, a first quarter in the evening, a full moon around midnight, a last quarter at dawn, about 50 minutes later each day.

@@ -359,27 +359,34 @@
       }
     }
 
-    // --- Enoshima, from the Kamakura side: a sheer cliff on the left, a flat
-    // wooded top with the Sea Candle, a long slope down to the right, and a
-    // line of lights along its foot and the causeway.
+    // --- Enoshima as it is usually seen from the Kamakura side (traced from
+    // several photographs): a sheer cliff on the left with a rounded shoulder,
+    // a broad wooded crown, the Sea Candle about two thirds across, a long
+    // slope to the right ending in a small wooded hump, and flat land at both
+    // ends: the yacht harbor breakwater with its little white lighthouse on the
+    // left, the bridge to the mainland on the right.
     // Lights come on as the sun goes down, fully by 6° below the horizon.
     const lights = clamp01(Math.max(night * 1.3, (4 - alt) / 10));
     const pulse = t ? (Math.floor(t / 2) % 3 === 0 ? 1 : 0.6) : 0.85;
-    const isle = mix(
-      mix(lift(mix(ocean, zenith, 0.5), 0.05), horizonSky, 0.3 * daylight),
-      [12, 14, 26],
-      Math.max(0.4 * night, 0.45 * lowWarm * (1 - daylight * 0.5)),
-    );
-    const canopyLit = mix(isle, lift(horizonSky, 0.1), 0.16 * daylight + 0.1 * lowWarm);
-    const ix0 = Math.round(W * 0.585);
-    const ix1 = Math.round(W * 0.745);
+    const silhouette = clamp01(1 - daylight * 1.2); // 0 by day, 1 from sunset on
+    const duskIsle = mix(mix(lift(mix(ocean, zenith, 0.5), 0.05), [12, 14, 26], 0.45), [12, 14, 26], 0.4 * night);
+    const byDay = (c, haze) => mix(mix(c, horizonSky, haze), duskIsle, silhouette);
+    const isle = byDay([44, 76, 56], 0.3); // deep green woods, softened by distance
+    const canopyLit = mix(byDay([82, 118, 80], 0.28), lift(glow, 0.1), 0.18 * lowWarm);
+    const rock = byDay([124, 112, 98], 0.3);
+    const whiteWall = byDay([216, 212, 200], 0.28);
+    const ix0 = Math.round(W * 0.6);
+    const ix1 = Math.round(W * 0.75);
     const coastX = Math.round(W * 0.835);
-    const top = 6.5 * u;
-    // Profile traced from the photograph: [position across the island, height].
+    const bw = ix1 - ix0;
+    const harborX = ix0 - Math.round(bw * 0.32);
+    const top = 6.6 * u;
+    // A gently domed crown, highest left of center, easing down to the right.
     const PROFILE = [
-      [0, 0.06], [0.08, 0.1], [0.11, 0.86], [0.14, 0.98], [0.26, 0.95], [0.36, 0.99],
-      [0.46, 1.02], [0.56, 0.96], [0.66, 0.78], [0.76, 0.6], [0.83, 0.56], [0.87, 0.58],
-      [0.91, 0.42], [0.95, 0.16], [1, 0.06],
+      [0, 0.04], [0.012, 0.3], [0.022, 0.58], [0.035, 0.76], [0.055, 0.88], [0.08, 0.94], [0.13, 0.98],
+      [0.22, 1], [0.33, 1], [0.44, 0.97], [0.54, 0.93], [0.63, 0.89], [0.7, 0.82], [0.76, 0.68],
+      [0.81, 0.53], [0.845, 0.39], [0.865, 0.32], [0.89, 0.42], [0.915, 0.48], [0.94, 0.46], [0.965, 0.34],
+      [0.985, 0.15], [1, 0.05],
     ];
     const profile = (v) => {
       for (let i = 0; i < PROFILE.length - 1; i++) {
@@ -391,36 +398,61 @@
     };
     const heights = [];
     for (let x = ix0; x <= ix1; x++) {
-      const v = (x - ix0) / (ix1 - ix0);
-      const clump = Math.floor(x / Math.max(2, Math.round(2.2 * k)));
-      const bump = v > 0.12 && v < 0.93 ? (hash(clump, 5, 53) - 0.3) * 1.1 * u : 0;
+      const v = (x - ix0) / bw;
+      const clump = Math.floor(x / Math.max(2, Math.round(2 * k)));
+      const bump = v > 0.06 && v < 0.97 ? (hash(clump, 5, 53) - 0.35) * 0.9 * u : 0;
       heights.push(Math.max(1, Math.round(profile(v) * top + bump)));
     }
     heights.forEach((h, i) => {
       const x = ix0 + i;
-      for (let y = 0; y < h; y++) set(x, horizonY - 1 - y, y >= h - Math.max(1, Math.round(u * 0.5)) ? canopyLit : isle);
+      const v = i / bw;
+      const crown = Math.max(1, Math.round(u * 0.5));
+      for (let y = 0; y < h; y++) {
+        let c = y >= h - crown ? canopyLit : isle;
+        // The bare rock of the cliff face, below its wooded shoulder.
+        if (v < 0.06 && y < h * 0.8 && hash(x, y, 167) < 0.85) c = rock;
+        set(x, horizonY - 1 - y, c);
+      }
     });
-    // Low land at both ends: the spit on the left, the harbor and causeway on the right.
-    for (let x = ix0 - Math.round(W * 0.02); x < coastX; x++) {
+    // Small white buildings scattered along the waterline at the island's foot.
+    const townWall = mix(whiteWall, isle, 0.3);
+    for (let x = ix0 + Math.round(bw * 0.14); x < ix1 - Math.round(bw * 0.03); x++) {
+      const block = Math.floor(x / Math.max(2, Math.round(1.6 * k)));
+      if (hash(block, 6, 59) > 0.38) continue;
+      const bh = Math.max(1, Math.round((0.5 + hash(block, 7, 61) * 0.7) * u));
+      for (let y = 0; y < bh; y++) set(x, horizonY - 1 - y, townWall);
+    }
+    // The yacht harbor on the left (masts, its breakwater and little white
+    // lighthouse), and the low land toward the bridge on the right.
+    for (let x = harborX; x < coastX; x++) {
       if (x >= ix0 && x <= ix1) continue;
-      const h = x < ix0 ? Math.round(0.6 * u) : Math.max(1, Math.round(0.5 * u * (1 - (x - ix1) / (coastX - ix1))));
-      for (let y = 0; y < h; y++) set(x, horizonY - 1 - y, isle);
+      const h = x < ix0 ? Math.max(1, Math.round(0.45 * u)) : Math.max(1, Math.round(0.5 * u * (1 - (x - ix1) / (coastX - ix1))));
+      for (let y = 0; y < h; y++) set(x, horizonY - 1 - y, x < ix0 ? townWall : isle);
+      if (x < ix0 && x > harborX + 3 * k && hash(x, 17, 173) < 0.1) {
+        for (let y = h; y < h + Math.round(1.4 * u); y++) blend(x, horizonY - 1 - y, whiteWall, 0.4); // masts
+      }
     }
-    // The Sea Candle: tapered tower, a lit observation deck, the lantern.
-    const tx = Math.round(ix0 + (ix1 - ix0) * 0.44);
+    const lhW = Math.max(1, Math.round(0.7 * k));
+    const lhH = Math.round(2.4 * u);
+    for (let y = 0; y < lhH; y++) for (let x = 0; x < lhW; x++) set(harborX + x, horizonY - 1 - y, lift(whiteWall, 0.08));
+    if (lights > 0.05 && Math.floor(t / 3) % 2 === 0) blend(harborX, horizonY - 1 - lhH, [250, 236, 214], 0.8 * lights);
+
+    // The Sea Candle: a slender lattice tower that widens at its observation
+    // deck, with the glass lantern on top. It stands about half the island's
+    // height above the trees.
+    const tx = Math.round(ix0 + bw * 0.63);
     const baseY = horizonY - 1 - (heights[tx - ix0] || 0);
-    const towerH = Math.round(4 * u);
-    const towerCol = mix(isle, lift(horizonSky, 0.25), 0.22 + 0.3 * daylight);
-    for (let y = 0; y < towerH; y++) {
-      const w = Math.max(1, Math.round((1.9 - 0.8 * (y / towerH)) * k));
-      for (let x = 0; x < w; x++) set(tx - (w >> 1) + x, baseY - y, towerCol);
-    }
+    const towerH = Math.round(1.6 * u);
+    const towerCol = byDay([168, 174, 176], 0.32); // an open lattice: grey in the haze, not white
+    const bodyW = Math.max(1, Math.round(k));
+    for (let y = 0; y < towerH; y++) for (let x = 0; x < bodyW; x++) set(tx - (bodyW >> 1) + x, baseY - y, towerCol);
+    const deckW = bodyW + 2;
+    for (let x = 0; x < deckW; x++) set(tx - (deckW >> 1) + x, baseY - towerH, towerCol);
     const deckY = baseY - towerH;
-    const deckW = Math.max(3, Math.round(2.4 * k));
-    for (let x = 0; x < deckW; x++) set(tx - (deckW >> 1) + x, deckY, towerCol);
-    const tw = Math.max(1, Math.round(1.4 * k));
-    const lanternH = Math.max(1, Math.round(1.2 * k));
+    const tw = bodyW;
+    const lanternH = Math.max(1, Math.round(1 * k));
     for (let r = 1; r <= lanternH; r++) for (let x = 0; x < tw; x++) set(tx - (tw >> 1) + x, deckY - r, towerCol);
+    set(tx, deckY - lanternH - 1, towerCol); // the cap
     if (lights > 0.05) {
       for (let r = 1; r <= lanternH; r++) {
         for (let x = 0; x < tw; x++) blend(tx - (tw >> 1) + x, deckY - r, WARM_LIGHT, lights * pulse);
@@ -441,7 +473,7 @@
         }
       }
       // Lights along the foot of the island and the causeway, mirrored on the sea.
-      for (let x = ix0 - Math.round(W * 0.02); x < coastX; x++) {
+      for (let x = harborX; x < coastX; x++) {
         const onIsland = x >= ix0 && x <= ix1;
         if (hash(x, 3, 67) > (onIsland ? 0.3 : 0.12)) continue;
         const ly = horizonY - 1 - (onIsland ? Math.floor(hash(x, 4, 71) * 1.6 * u) : 0);
