@@ -1,0 +1,248 @@
+{
+  "name": "shonan-vibes",
+  "displayName": "Shonan Vibes",
+  "description": "A quiet dark theme that follows the light of the Shonan coast through the day: moonlit night, violet dawn, ocean-blue noon, golden sunset. One theme, one coastline, one day.",
+  "version": "0.1.0",
+  "publisher": "tsubasato",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#0b1220",
+    "theme": "dark"
+  },
+  "homepage": "https://github.com/Rhizobium-gits/shonan-vibes#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rhizobium-gits/shonan-vibes.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Rhizobium-gits/shonan-vibes/issues"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Themes",
+    "Other"
+  ],
+  "keywords": [
+    "theme",
+    "dark theme",
+    "color theme",
+    "dynamic theme",
+    "time of day",
+    "sunrise",
+    "sunset",
+    "ocean",
+    "calm",
+    "chill",
+    "shonan",
+    "pixel art"
+  ],
+  "main": "./out/src/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "contributes": {
+    "themes": [
+      {
+        "label": "Shonan Vibes",
+        "uiTheme": "vs-dark",
+        "path": "./themes/shonan-vibes-color-theme.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "shonanVibes.openShoreline",
+        "title": "Open Shoreline",
+        "category": "Shonan Vibes"
+      },
+      {
+        "command": "shonanVibes.previewTime",
+        "title": "Hold the Light at a Time of Day…",
+        "category": "Shonan Vibes"
+      },
+      {
+        "command": "shonanVibes.followSun",
+        "title": "Follow the Sun (Live)",
+        "category": "Shonan Vibes"
+      },
+      {
+        "command": "shonanVibes.toggleDynamicColors",
+        "title": "Toggle Dynamic Colors",
+        "category": "Shonan Vibes"
+      },
+      {
+        "command": "shonanVibes.refresh",
+        "title": "Refresh Colors Now",
+        "category": "Shonan Vibes"
+      },
+      {
+        "command": "shonanVibes.removeOverrides",
+        "title": "Remove Dynamic Colors from Settings",
+        "category": "Shonan Vibes"
+      }
+    ],
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "shonanVibes",
+          "title": "Shoreline",
+          "icon": "media/shoreline-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "shonanVibes": [
+        {
+          "type": "webview",
+          "id": "shonanVibes.shoreline",
+          "name": "Shoreline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Shonan Vibes",
+      "properties": {
+        "shonanVibes.dynamicColors": {
+          "order": 0,
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Let the colors follow the sun. When off, **Shonan Vibes** is a static moonlit theme and nothing is written to your settings."
+        },
+        "shonanVibes.intensity": {
+          "order": 1,
+          "type": "number",
+          "default": 1,
+          "minimum": 0,
+          "maximum": 1,
+          "markdownDescription": "How much the light moves. `0` keeps the moonlit base all day, `0.5` is a subtle shift, `1` is the full Shonan day."
+        },
+        "shonanVibes.updateInterval": {
+          "order": 2,
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 60,
+          "markdownDescription": "Minutes between checks of the light. Colors are only rewritten when the change would be perceptible, so long stretches of night or noon cause almost no updates."
+        },
+        "shonanVibes.useLocalTime": {
+          "order": 3,
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "On: the coast is moved into your time zone, so sunrise and sunset happen at your local hours wherever you are. Off: the real-time sky over the configured coast (Shonan by default, Japan time)."
+        },
+        "shonanVibes.sunriseTime": {
+          "order": 4,
+          "type": "string",
+          "default": "",
+          "pattern": "^$|^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
+          "patternErrorMessage": "Use HH:MM (24-hour), or leave empty.",
+          "markdownDescription": "Override sunrise with a fixed time, `HH:MM`. Leave empty to compute the real sunrise for today."
+        },
+        "shonanVibes.sunsetTime": {
+          "order": 5,
+          "type": "string",
+          "default": "",
+          "pattern": "^$|^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
+          "patternErrorMessage": "Use HH:MM (24-hour), or leave empty.",
+          "markdownDescription": "Override sunset with a fixed time, `HH:MM`. Leave empty to compute the real sunset for today."
+        },
+        "shonanVibes.oceanSaturation": {
+          "order": 6,
+          "type": "number",
+          "default": 1,
+          "minimum": 0,
+          "maximum": 1.5,
+          "markdownDescription": "Color strength of the sea, sky and accents. `0` is a gray-blue coast, `1` as designed, `1.5` a clearer summer sea. Syntax colors are not affected."
+        },
+        "shonanVibes.nightDarkness": {
+          "order": 7,
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0,
+          "maximum": 1,
+          "markdownDescription": "How dark the night gets. `0` keeps nights a soft slate, `0.5` as designed, `1` nearly black."
+        },
+        "shonanVibes.enableAtmosphericStatusBar": {
+          "order": 8,
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Treat the status bar as the shoreline: sea color, a thin line of light on the horizon, and sand at the remote indicator. Off gives a plain dark status bar."
+        },
+        "shonanVibes.statusBarIndicator": {
+          "order": 9,
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show a small dot in the status bar in the color of the current light (moon, dawn, sun, sunset). Hover it for the time of day; click to open the Shoreline."
+        },
+        "shonanVibes.seasonalTint": {
+          "order": 10,
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Small seasonal shifts: livelier summer sea, cooler winter blue, pastel spring dawns, warmer autumn evenings."
+        },
+        "shonanVibes.fixedTime": {
+          "order": 11,
+          "type": "string",
+          "default": "",
+          "pattern": "^$|^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
+          "patternErrorMessage": "Use HH:MM (24-hour), or leave empty.",
+          "markdownDescription": "Hold the light at one time of day, `HH:MM`. Leave empty to follow the sun. Also set by **Shonan Vibes: Hold the Light at a Time of Day…**."
+        },
+        "shonanVibes.latitude": {
+          "order": 12,
+          "type": "number",
+          "default": 35.2995,
+          "minimum": -90,
+          "maximum": 90,
+          "markdownDescription": "Latitude of the coast whose light you follow. Default: Enoshima, Shonan."
+        },
+        "shonanVibes.longitude": {
+          "order": 13,
+          "type": "number",
+          "default": 139.48,
+          "minimum": -180,
+          "maximum": 180,
+          "markdownDescription": "Longitude of the coast whose light you follow. Default: Enoshima, Shonan."
+        },
+        "shonanVibes.cloudCover": {
+          "order": 14,
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 1,
+          "markdownDescription": "Manual cloud cover, `0` (clear) to `1` (overcast). Mutes the sky and sea; syntax colors are unchanged. Reserved for a future, optional weather source."
+        },
+        "shonanVibes.shorelineMotion": {
+          "order": 15,
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Let the water in the Shoreline view shimmer very slowly. It only runs while the view is visible and respects reduced-motion settings."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p . && node out/scripts/generate-theme.js",
+    "watch": "tsc -watch -p .",
+    "test": "npm run build && node --test \"out/test/**/*.test.js\"",
+    "previews": "node out/scripts/render-previews.js",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "test:integration": "npm run build && node out/scripts/run-integration.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "~1.85.0",
+    "@vscode/vsce": "^3.2.0",
+    "typescript": "~5.9.3"
+  }
+}

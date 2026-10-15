@@ -1,0 +1,218 @@
+:root {
+  color-scheme: dark;
+  --room: #0d121b;
+  --text: #ced5dc;
+  --comment: #6d7787;
+  --sea: #060e19;
+  --glow: #c7dbea;
+  --sand: #4b463d;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--vscode-panel-background, var(--room));
+  color: var(--vscode-foreground, var(--text));
+  font-family: var(--vscode-font-family, system-ui, sans-serif);
+  font-size: var(--vscode-font-size, 13px);
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Panel view: the coast fills the whole panel. */
+.scene-wrap.view {
+  position: fixed;
+  inset: 0;
+}
+
+/* Editor tab */
+.panel {
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 20px clamp(16px, 4vw, 48px) 32px;
+  background: var(--room);
+  color: var(--text);
+}
+
+.panel .scene-wrap {
+  aspect-ratio: 16 / 5;
+  max-height: 46vh;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--scene-zenith, var(--room));
+}
+
+.timeline {
+  margin: 18px 0 22px;
+}
+
+.readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin-bottom: 10px;
+}
+
+.clock {
+  font-family: var(--vscode-editor-font-family, 'SF Mono', Menlo, Consolas, ui-monospace, monospace);
+  font-size: 1.6em;
+  letter-spacing: 0.04em;
+  color: var(--glow);
+  font-variant-numeric: tabular-nums;
+}
+
+.phase {
+  font-size: 1.1em;
+  color: var(--text);
+}
+
+.sun {
+  color: var(--comment);
+}
+
+input[type='range'] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--glow);
+}
+
+.hours {
+  display: flex;
+  justify-content: space-between;
+  color: var(--comment);
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-top: 12px;
+}
+
+button {
+  font: inherit;
+  color: var(--vscode-button-foreground, var(--text));
+  background: var(--vscode-button-background, var(--sea));
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+button#now {
+  color: var(--vscode-button-secondaryForeground, var(--text));
+  background: var(--vscode-button-secondaryBackground, transparent);
+}
+
+button:hover {
+  filter: brightness(1.1);
+}
+
+button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder, var(--glow));
+  outline-offset: 2px;
+}
+
+.note {
+  color: var(--comment);
+  font-size: 0.92em;
+}
+
+/* Editor preview, painted with the palette of the selected hour */
+.preview {
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+#code {
+  margin: 0;
+  padding: 14px 0;
+  background: var(--room);
+  font-family: var(--vscode-editor-font-family, 'SF Mono', Menlo, Consolas, ui-monospace, monospace);
+  font-size: var(--vscode-editor-font-size, 13px);
+  line-height: 1.6;
+  overflow-x: auto;
+  color: var(--text);
+}
+
+.line {
+  white-space: pre;
+  padding-right: 16px;
+}
+
+.ln {
+  display: inline-block;
+  width: 3.2em;
+  padding-right: 1.4em;
+  text-align: right;
+  color: color-mix(in srgb, var(--comment) 70%, var(--room));
+  user-select: none;
+}
+
+.tok.comment { color: var(--comment); font-style: italic; }
+.tok.keyword { color: var(--keyword); }
+.tok.func { color: var(--func); }
+.tok.string { color: var(--string); }
+.tok.number { color: var(--number); }
+.tok.type { color: var(--type); }
+.tok.param { color: var(--param); }
+.tok.text { color: var(--text); }
+.tok.property { color: var(--property); }
+.tok.operator { color: var(--operator); }
+.tok.punct { color: var(--punct); }
+
+.statusbar {
+  display: flex;
+  align-items: stretch;
+  height: 22px;
+  font-size: 12px;
+  background: var(--sea);
+  color: color-mix(in srgb, var(--text) 85%, var(--sand));
+  border-top: 1px solid color-mix(in srgb, var(--glow) 45%, transparent);
+}
+
+.statusbar span {
+  display: flex;
+  align-items: center;
+  padding: 0 9px;
+}
+
+.statusbar .remote {
+  background: var(--sand);
+  color: var(--room);
+  padding: 0 10px;
+}
+
+.statusbar .grow {
+  flex: 1;
+}
+
+.statusbar .dot {
+  color: var(--glow);
+}
+
+@media (max-width: 520px) {
+  .panel {
+    padding: 12px 16px 24px;
+  }
+  .panel .scene-wrap {
+    aspect-ratio: 16 / 7;
+  }
+}
